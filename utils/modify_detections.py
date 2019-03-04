@@ -18,14 +18,14 @@ def add_noise(detection):
     w_2 = round(w*random.uniform(rescale_min, rescale_max))
     h_2 = round(h*random.uniform(rescale_min, rescale_max))
 
-    return Detection(detection.id, detection.label, xtl_2, ytl_2, w_2, h_2)
+    return Detection(detection.id, detection.label, xtl_2, ytl_2, w_2, h_2, None)
 
 
 def generate_detection(frame_id, min_prob = 0.5):
     if random.uniform(0, 1) > min_prob:
         xtl = round(random.uniform(0, 1910))
         ytl = round(random.uniform(0, 1070))
-        return Detection(id=frame_id, label='car', xtl = xtl, ytl = ytl, width=round(min(random.uniform(50, 300), 1920-xtl)), height=round(min(random.uniform(50, 200), 1080-ytl)))
+        return Detection(id=frame_id, label='car', xtl = xtl, ytl = ytl, width=round(min(random.uniform(50, 300), 1920-xtl)), height=round(min(random.uniform(50, 200), 1080-ytl)), confidence=None)
     else:
         return
 
