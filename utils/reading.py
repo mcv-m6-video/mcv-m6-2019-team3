@@ -37,18 +37,18 @@ def read_annotations(capture, root, numannotated=40):
         if num > numannotated:
             break
 
+        images.append(image)
         for track in root.findall('track'):
             gt_id = track.attrib['id']
             label = track.attrib['label']
             box = track.find("box[@frame='{0}']".format(str(num)))
             if box is not None:
-
                 xtl = int(float(box.attrib['xtl']))
                 ytl = int(float(box.attrib['ytl']))
                 xbr = int(float(box.attrib['xbr']))
                 ybr = int(float(box.attrib['ybr']))
                 ground_truths.append(Detection(gt_id, label, xtl, ytl, xbr - xtl + 1, ybr - ytl + 1))
-                images.append(image)
+
         num += 1
 
     # print(ground_truths)
