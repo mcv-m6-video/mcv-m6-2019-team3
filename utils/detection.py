@@ -1,11 +1,12 @@
 class Detection(object):
-    def __init__(self, id, label, xtl, ytl, width, height):
+    def __init__(self, id, label, xtl, ytl, width, height, confidence=None):
         self.id = id
         self.label = label
         self.xtl = xtl
         self.ytl = ytl
         self.width = width
         self.height = height
+        self.confidence = confidence
         self.bbox = [xtl, ytl, xtl+width, ytl+height]
 
     def __repr__(self):
