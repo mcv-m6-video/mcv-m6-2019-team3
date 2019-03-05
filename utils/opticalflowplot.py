@@ -1,42 +1,9 @@
-import matplotlib.pyplot as plt
-import numpy as np
-from numpy import ma
 import os
+
+import numpy as np
 import cv2
 
-
-def OFplots(ofImages, images):
-    step = 10
-    ind = 0
-
-    for ofIm in ofImages:
-        ofIm = cv2.resize(ofIm, (0, 0), fx=1. / step, fy=1. / step)
-        rows, cols, depth = ofIm.shape
-        U = []
-        V = []
-
-        for pixel in range(0, ofIm[:, :, 0].size):
-            isOF = ofIm[:, :, 0].flat[pixel]
-            if isOF == 1:
-                U.append((((float)(ofIm[:, :, 1].flat[pixel]) - 2 ** 15) / 64.0) / 200.0)
-                V.append((((float)(ofIm[:, :, 2].flat[pixel]) - 2 ** 15) / 64.0) / 200.0)
-            else:
-                U.append(0)
-                V.append(0)
-        print(np.max(U))
-        print(U[:30])
-        U = np.reshape(U, (rows, cols))
-        V = np.reshape(V, (rows, cols))
-        print(U.shape)
-        x, y = np.meshgrid(np.arange(0, cols * step, step), np.arange(0, rows * step, step))
-
-        plt.imshow(images[ind])
-        plt.quiver(x, y, U, V, scale=0.1, alpha=1, color='r')
-        plt.title('Optical Flow')
-        plt.savefig('OF' + str(ind) + '.png')
-        plt.show()
-        plt.close()
-        ind += 1
+import matplotlib.pyplot as plt
 
 
 def plot_opticalflow(opticalflow, sequence, step=10):
@@ -58,6 +25,7 @@ def plot_opticalflow(opticalflow, sequence, step=10):
         x = np.reshape(x[valid], (h, w))
         y = np.reshape(y[valid], (h, w))
         plt.imshow(sequence[ind])
+
         plt.quiver(x, y, U, -V, scale=maxOF*7, alpha=1, color='r')
         plt.title('LK Optical Flow Results')
         plt.savefig('OpticalFlow_image' + str(ind) + '.png')
