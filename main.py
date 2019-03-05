@@ -7,6 +7,7 @@ from typing import Iterator, Tuple
 from evaluation.evaluation_funcs import compute_IoU, performance_evaluation_window, compute_mAP
 from utils.reading import read_annotations, read_detections, read_annotations_from_txt
 from utils.modify_detections import obtain_modified_detections
+from evaluation.temporal_analysis import plotIoU, plotF1
 
 
 video_path = "./datasets/AICity_data/train/S03/c010/vdo.avi"
@@ -42,12 +43,17 @@ if __name__ == "__main__":
 
     # Compute IoU
     print("\nComputing IoU")
-    compute_IoU(video_path, groundtruth_list, detections_list)
+    IoUFrames, F1Frames= compute_IoU(video_path, groundtruth_list, detections_list)
+    plotIoU(IoUFrames, "./plots/IOUplots")
+    plotF1(F1Frames, "./plots/F1plots")
 
     # Repeat with modified detections
     print("Computing IoU with modified detections")
     detections_modified = obtain_modified_detections(detections_list)
-    compute_IoU(video_path, groundtruth_list, detections_modified)
+    IoUFrames, F1Frames = compute_IoU(video_path, groundtruth_list, detections_modified)
+    plotIoU(IoUFrames, "./plots/IOUplots_noise")
+    plotF1(F1Frames, "./plots/F1plots_noise")
+
 
     #Compute mAP
     print("\nComputing mAP")

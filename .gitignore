@@ -3,6 +3,7 @@
 *.ipynb
 frames/
 frames_out/
+plots/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

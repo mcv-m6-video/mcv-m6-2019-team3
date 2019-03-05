@@ -11,9 +11,9 @@ def compute_IoU(video_path, groundtruth_list, detections_list):
 
     capture = cv2.VideoCapture(video_path)
     n = 0; TP = 0; FN = 0; FP = 0
-
+    IoUFrames = []
+    F1_frames = []
     while capture.isOpened():
-        #print(n)
         valid, image = capture.read()
         if not valid:
             break
@@ -28,13 +28,30 @@ def compute_IoU(video_path, groundtruth_list, detections_list):
         #print("detections: {}".format(detections_bboxes))
 
         TP_temp, FN_temp, FP_temp = performance_accumulation_window(detections_bboxes, gt_bboxes)
+        IoU_temp = 0
+        precision = 0
+        recall = 0
+        F1_score = 0
+        if TP_temp is not 0:
+            IoU_temp = float(TP_temp) / float(TP_temp+FP_temp+FN_temp)
+            recall = float(TP_temp) / float(TP_temp+FP_temp)
+            precision = float(TP_temp) / float(TP_temp+FN_temp)
+            F1_score = 2*recall*precision / (recall+precision)
+
         TP += TP_temp
         FN += FN_temp
         FP += FP_temp
-
+        IoUFrames.append([TP_temp, FN_temp, FP_temp, IoU_temp])
+        F1_frames.append([F1_score, precision, recall])
         n += 1
-
+    IoU = float(TP) / float(TP+FP+FN)
+    recall = float(TP) / float(TP+FP)
+    precision = float(TP) / float(TP+FN)
+    F1_score = 2*recall*precision / (recall+precision)
     print("TP={} FN={} FP={}".format(TP, FN, FP))
+    print("IoU={}".format(IoU))
+    print("F1={}".format(F1_score))
+    return IoUFrames, F1_frames
 
 
 def compute_mAP(groundtruth_list, detections_list):
@@ -48,8 +65,8 @@ def compute_mAP(groundtruth_list, detections_list):
     precision = list(); recall = list()
 
     # to compute mAP
-    max_precision_per_step = list();
-    threshold = ceil((1/groundtruth_size)*10)/10;
+    max_precision_per_step = list()
+    threshold = ceil((1/groundtruth_size)*10)/10
     checkpoint = 0
 
 
@@ -94,8 +111,8 @@ def plot_precision_recall_curve(precision, recall):
            title='Precision-Recall Curve')
     ax.grid()
 
-    #fig.savefig("test.png")
-    #plt.show()
+    fig.savefig("plots/precision-recall.png")
+    # plt.show()
 
 # def performance_accumulation_pixel(pixel_candidates, pixel_annotation):
 #     """
