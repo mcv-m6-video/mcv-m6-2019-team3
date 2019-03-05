@@ -73,12 +73,12 @@ def read_annotations_from_txt(gt_path):
 
     return ground_truths_list
 
-def read_annotations(gt_path):
+def read_annotations_file(gt_path):
     if (gt_path.endswith('.txt')):
-        detections_list = read_annotations_from_txt(gt_path)
+        annotations_list = read_annotations_from_txt(gt_path)
     elif (gt_path.endswith('.xml')):
-        detections_list = read_detections(gt_path)
+        annotations_list = read_detections(gt_path)
     else:
         raise Exception('Incompatible filetype')
 
-    return detections_list
+    return annotations_list
