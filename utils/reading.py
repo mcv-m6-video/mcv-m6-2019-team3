@@ -1,5 +1,6 @@
 from utils.detection import Detection
 
+
 def read_detections(path: str):
     # [frame, -1, left, top, width, height, conf, -1, -1, -1]
     frame_detections = []
@@ -16,9 +17,10 @@ def read_detections(path: str):
             width = int(float(parts[4]))
             height = int(float(parts[5]))
 
-            frame_detections.append(Detection(frame_id, 'car', tl_x, tl_y, width, height))
+            frame_detections.append(Detection(frame_id, 'car', tl_x, tl_y, width, height, 1))
 
     return frame_detections
+
 
 def read_annotations(capture, root, numannotated=40):
     """
