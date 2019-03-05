@@ -64,7 +64,7 @@ def compute_mAP(groundtruth_list, detections_list):
 
         # Get max precision for each 0.05 step of confidence
         if recall[-1] > threshold or n == len(detections_list)-1:
-            max_precision_per_step.append(max(precision[checkpoint:len(precision)-1]))
+            max_precision_per_step.append(max(precision[checkpoint:len(precision)-2]))
 
             checkpoint = len(precision)
             threshold += 0.1
