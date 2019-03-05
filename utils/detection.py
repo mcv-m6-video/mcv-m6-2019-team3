@@ -1,5 +1,5 @@
 class Detection(object):
-    def __init__(self, frame, label, xtl, ytl, width, height, confidence):
+    def __init__(self, frame, label, xtl, ytl, width, height, confidence=1):
         self.frame = frame
         self.label = label
         self.xtl = xtl
