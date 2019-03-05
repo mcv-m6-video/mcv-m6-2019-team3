@@ -1,3 +1,5 @@
+from math import ceil
+
 import cv2
 import numpy as np
 import matplotlib.pyplot as plt
@@ -44,7 +46,12 @@ def compute_mAP(groundtruth_list, detections_list):
 
     TP = 0; FP = 0; FN = 0
     precision = list(); recall = list()
-    max_precision_per_step = list(); threshold = 0.1; checkpoint = 0 # to compute mAP
+
+    # to compute mAP
+    max_precision_per_step = list();
+    threshold = ceil((1/groundtruth_size)*10)/10;
+    checkpoint = 0
+
 
     for n, detection in enumerate(detections_list):
         # Get groundtruth of the target frame
