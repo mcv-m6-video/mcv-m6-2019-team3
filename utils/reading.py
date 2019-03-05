@@ -72,3 +72,13 @@ def read_annotations_from_txt(gt_path):
             ground_truths_list.append(Detection(int(data[0]), 'car', int(float(data[2])), int(float(data[3])), int(float(data[2])) + int(float(data[4])), int(float(data[3])) + int(float(data[5])),float(data[6])))
 
     return ground_truths_list
+
+def read_annotations(gt_path):
+    if (gt_path.endswith('.txt')):
+        detections_list = read_annotations_from_txt(gt_path)
+    elif (gt_path.endswith('.xml')):
+        detections_list = read_detections(gt_path)
+    else:
+        raise Exception('Incompatible filetype')
+
+    return detections_list
