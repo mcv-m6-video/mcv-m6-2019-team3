@@ -2,6 +2,10 @@ import numpy as np
 from evaluation.bbox_iou import bbox_iou
 import cv2
 
+import matplotlib.pyplot as plt
+import numpy as np
+
+
 def compute_IoU(video_path, groundtruth_list, detections_list):
 
     capture = cv2.VideoCapture(video_path)
@@ -30,6 +34,52 @@ def compute_IoU(video_path, groundtruth_list, detections_list):
         n += 1
 
     print("TP={} FN={} FP={}".format(TP, FN, FP))
+
+
+def compute_mAP(groundtruth_list, detections_list):
+
+    # Sort detections by confidence
+    detections_list.sort(key=lambda x: x.confidence, reverse=True)
+    groundtruth_size = len(groundtruth_list)
+
+    TP = 0; FP = 0; FN = 0
+    precision = list()
+    recall = list()
+
+    for n, detection in enumerate(detections_list):
+        gt_on_frame = [x for x in groundtruth_list if x.frame == detection.frame]
+        gt_bboxes = [o.bbox for o in gt_on_frame]
+
+        TP_temp, FN_temp, FP_temp = performance_accumulation_window([detection.bbox], gt_bboxes)
+        if(TP_temp == 1):
+            TP += 1
+        else:
+            FP += 1
+
+        precision.append(TP/(TP+FP))
+        recall.append(TP/groundtruth_size)
+
+
+    print("TP={} FN={} FP={}".format(TP, groundtruth_size-(TP), FP))
+    print(precision)
+    print(recall)
+    plot_precision_recall_curve(precision, recall)
+
+
+def plot_precision_recall_curve(precision, recall):
+
+    # Data for plotting
+    fig, ax = plt.subplots()
+    ax.plot(recall, precision)
+
+    ax.set(xlabel='Recall', ylabel='Precision',
+           title='Precision-Recall Curve')
+    ax.grid()
+
+    #fig.savefig("test.png")
+    plt.show()
+
+
 
 
 # def performance_accumulation_pixel(pixel_candidates, pixel_annotation):

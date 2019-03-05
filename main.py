@@ -4,7 +4,7 @@ import numpy as np
 import xml.etree.ElementTree as ET
 from typing import Iterator, Tuple
 
-from evaluation.evaluation_funcs import compute_IoU, performance_evaluation_window
+from evaluation.evaluation_funcs import compute_IoU, performance_evaluation_window, compute_mAP
 from utils.reading import read_annotations, read_detections, read_annotations_from_txt
 from utils.modify_detections import obtain_modified_detections
 
@@ -50,3 +50,7 @@ if __name__ == "__main__":
     print("Modified detections")
     detections_modified = obtain_modified_detections(detections_list)
     compute_IoU(video_path, groundtruth_list, detections_modified)
+
+    #Compute mAP
+    print("Computing mAP")
+    compute_mAP(groundtruth_list, detections_list)
