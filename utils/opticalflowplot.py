@@ -45,17 +45,20 @@ def plot_opticalflow(opticalflow, sequence, step=10):
         image = cv2.resize(image, (0, 0), fx=1./step, fy=1./step)
         flow = convert_flow_data(image)
         valid = np.transpose(flow[:, :, 2] == 1)
-        U = np.transpose(flow[:, :, 0]/200)
-        V = np.transpose(flow[:, :, 1]/200)
+        U = np.transpose(flow[:, :, 0])
+        V = np.transpose(flow[:, :, 1])
 
         w, h = flow.shape[:2]
         U = np.reshape(U[valid], (h, w))
         V = np.reshape(V[valid], (h, w))
+
+        maxOF = max(np.max(U), np.max(V))
+
         x, y = np.meshgrid(np.arange(0, w*step, step), np.arange(0, h*step, step))
         x = np.reshape(x[valid], (h, w))
         y = np.reshape(y[valid], (h, w))
         plt.imshow(sequence[ind])
-        plt.quiver(x, y, U, -V, scale=0.1, alpha=1, color='r')
+        plt.quiver(x, y, U, -V, scale=maxOF*7, alpha=1, color='r')
         plt.title('LK Optical Flow Results')
         plt.savefig('OpticalFlow_image' + str(ind) + '.png')
         plt.show()
