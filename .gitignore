@@ -1,3 +1,9 @@
+*.avi
+*.zip
+*.ipynb
+frames/
+frames_out/
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]

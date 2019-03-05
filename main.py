@@ -33,8 +33,6 @@ if __name__ == "__main__":
 
     # Get detections
     print("Getting detections")
-    detections_list = read_annotations_from_txt(detections_path)
-
     if (detections_path.endswith('.txt')):
         detections_list = read_annotations_from_txt(detections_path)
     elif (detections_path.endswith('.xml')):
@@ -43,14 +41,14 @@ if __name__ == "__main__":
         raise Exception('Incompatible filetype')
 
     # Compute IoU
-    print("Computing IoU")
+    print("\nComputing IoU")
     compute_IoU(video_path, groundtruth_list, detections_list)
 
     # Repeat with modified detections
-    print("Modified detections")
+    print("Computing IoU with modified detections")
     detections_modified = obtain_modified_detections(detections_list)
     compute_IoU(video_path, groundtruth_list, detections_modified)
 
     #Compute mAP
-    print("Computing mAP")
+    print("\nComputing mAP")
     compute_mAP(groundtruth_list, detections_list)
