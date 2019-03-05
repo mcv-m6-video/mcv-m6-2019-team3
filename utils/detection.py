@@ -1,6 +1,6 @@
 class Detection(object):
-    def __init__(self, id, label, xtl, ytl, width, height, confidence):
-        self.id = id
+    def __init__(self, frame, label, xtl, ytl, width, height, confidence):
+        self.frame = frame
         self.label = label
         self.xtl = xtl
         self.ytl = ytl
@@ -13,4 +13,4 @@ class Detection(object):
         return self.__str__()
 
     def __str__(self):
-        return '\n id={0}, label={1}, TopLeftXY=({2},{3}), width={4}, height={5}'.format(self.id, self.label, self.xtl, self.ytl, self.width, self.height)
+        return '\n frame={0}, label={1}, confidence={6} TopLeftXY=({2},{3}), width={4}, height={5}'.format(self.frame, self.label, self.xtl, self.ytl, self.width, self.height, self.confidence)

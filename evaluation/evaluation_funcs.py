@@ -1,35 +1,65 @@
 import numpy as np
 from evaluation.bbox_iou import bbox_iou
+import cv2
+
+def compute_IoU(video_path, groundtruth_list, detections_list):
+
+    capture = cv2.VideoCapture(video_path)
+    n = 0; TP = 0; FN = 0; FP = 0
+
+    while capture.isOpened():
+        print(n)
+        valid, image = capture.read()
+        if not valid:
+            break
+
+        # Get grountruth and detections from frame n
+        gt_on_frame = [x for x in groundtruth_list if x.frame == n]
+        gt_bboxes = [o.bbox for o in gt_on_frame]
+        #print("groundtruth: {}".format(gt_bboxes))
+
+        detections_on_frame = [x for x in detections_list if x.frame == n]
+        detections_bboxes = [o.bbox for o in detections_on_frame]
+        #print("detections: {}".format(detections_bboxes))
+
+        TP_temp, FN_temp, FP_temp = performance_accumulation_window(detections_bboxes, gt_bboxes)
+        TP += TP_temp
+        FN += FN_temp
+        FP += FP_temp
+
+        n += 1
+
+    print("TP={} FN={} FP={}".format(TP, FN, FP))
 
 
-def performance_accumulation_pixel(pixel_candidates, pixel_annotation):
-    """ 
-    performance_accumulation_pixel()
-
-    Function to compute different performance indicators 
-    (True Positive, False Positive, False Negative, True Negative) 
-    at the pixel level
-       
-    [pixelTP, pixelFP, pixelFN, pixelTN] = performance_accumulation_pixel(pixel_candidates, pixel_annotation)
-       
-    Parameter name      Value
-    --------------      -----
-    'pixel_candidates'   Binary image marking the detected areas
-    'pixel_annotation'   Binary image containing ground truth
-       
-    The function returns the number of True Positive (pixelTP), False Positive (pixelFP), 
-    False Negative (pixelFN) and True Negative (pixelTN) pixels in the image pixel_candidates
-    """
-    
-    pixel_candidates = np.uint64(pixel_candidates>0)
-    pixel_annotation = np.uint64(pixel_annotation>0)
-    
-    pixelTP = np.sum(pixel_candidates & pixel_annotation)
-    pixelFP = np.sum(pixel_candidates & (pixel_annotation==0))
-    pixelFN = np.sum((pixel_candidates==0) & pixel_annotation)
-    pixelTN = np.sum((pixel_candidates==0) & (pixel_annotation==0))
-
-    return [pixelTP, pixelFP, pixelFN, pixelTN]
+# def performance_accumulation_pixel(pixel_candidates, pixel_annotation):
+#     """
+#     performance_accumulation_pixel()
+#
+#     Function to compute different performance indicators
+#     (True Positive, False Positive, False Negative, True Negative)
+#     at the pixel level
+#
+#     [pixelTP, pixelFP, pixelFN, pixelTN] = performance_accumulation_pixel(pixel_candidates, pixel_annotation)
+#
+#     Parameter name      Value
+#     --------------      -----
+#     'pixel_candidates'   Binary image marking the detected areas
+#     'pixel_annotation'   Binary image containing ground truth
+#
+#     The function returns the number of True Positive (pixelTP), False Positive (pixelFP),
+#     False Negative (pixelFN) and True Negative (pixelTN) pixels in the image pixel_candidates
+#     """
+#
+#     pixel_candidates = np.uint64(pixel_candidates>0)
+#     pixel_annotation = np.uint64(pixel_annotation>0)
+#
+#     pixelTP = np.sum(pixel_candidates & pixel_annotation)
+#     pixelFP = np.sum(pixel_candidates & (pixel_annotation==0))
+#     pixelFN = np.sum((pixel_candidates==0) & pixel_annotation)
+#     pixelTN = np.sum((pixel_candidates==0) & (pixel_annotation==0))
+#
+#     return [pixelTP, pixelFP, pixelFN, pixelTN]
 
 
 def performance_accumulation_window(detections, annotations):
@@ -73,31 +103,31 @@ def performance_accumulation_window(detections, annotations):
     return [TP,FN,FP]
 
 
-def performance_evaluation_pixel(pixelTP, pixelFP, pixelFN, pixelTN):
-    """
-    performance_evaluation_pixel()
-
-    Function to compute different performance indicators (Precision, accuracy, 
-    specificity, sensitivity) at the pixel level
-    
-    [pixelPrecision, pixelAccuracy, pixelSpecificity, pixelSensitivity] = PerformanceEvaluationPixel(pixelTP, pixelFP, pixelFN, pixelTN)
-    
-       Parameter name      Value
-       --------------      -----
-       'pixelTP'           Number of True  Positive pixels
-       'pixelFP'           Number of False Positive pixels
-       'pixelFN'           Number of False Negative pixels
-       'pixelTN'           Number of True  Negative pixels
-    
-    The function returns the precision, accuracy, specificity and sensitivity
-    """
-    
-    pixel_precision   = float(pixelTP) / float(pixelTP+pixelFP)
-    pixel_accuracy    = float(pixelTP+pixelTN) / float(pixelTP+pixelFP+pixelFN+pixelTN)
-    pixel_specificity = float(pixelTN) / float(pixelTN+pixelFP)
-    pixel_sensitivity = float(pixelTP) / float(pixelTP+pixelFN)
-
-    return [pixel_precision, pixel_accuracy, pixel_specificity, pixel_sensitivity]
+# def performance_evaluation_pixel(pixelTP, pixelFP, pixelFN, pixelTN):
+#     """
+#     performance_evaluation_pixel()
+#
+#     Function to compute different performance indicators (Precision, accuracy,
+#     specificity, sensitivity) at the pixel level
+#
+#     [pixelPrecision, pixelAccuracy, pixelSpecificity, pixelSensitivity] = PerformanceEvaluationPixel(pixelTP, pixelFP, pixelFN, pixelTN)
+#
+#        Parameter name      Value
+#        --------------      -----
+#        'pixelTP'           Number of True  Positive pixels
+#        'pixelFP'           Number of False Positive pixels
+#        'pixelFN'           Number of False Negative pixels
+#        'pixelTN'           Number of True  Negative pixels
+#
+#     The function returns the precision, accuracy, specificity and sensitivity
+#     """
+#
+#     pixel_precision   = float(pixelTP) / float(pixelTP+pixelFP)
+#     pixel_accuracy    = float(pixelTP+pixelTN) / float(pixelTP+pixelFP+pixelFN+pixelTN)
+#     pixel_specificity = float(pixelTN) / float(pixelTN+pixelFP)
+#     pixel_sensitivity = float(pixelTP) / float(pixelTP+pixelFN)
+#
+#     return [pixel_precision, pixel_accuracy, pixel_specificity, pixel_sensitivity]
 
 
 def performance_evaluation_window(TP, FN, FP):
