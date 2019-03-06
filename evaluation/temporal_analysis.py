@@ -37,10 +37,14 @@ def plotIoU(IoUFrames, dir):
 def plotIoU_by_frame(IoUFrames, dir):
     IoUFrames = np.array(IoUFrames)
 
-    #plotIoU_by_frame_structure(IoUFrames[:,0], dir, "/TP_overframe", "TP")
+    print("Plot TP_overframe")
+    plot_by_frame_structure(IoUFrames[:,0], dir, "/TP_overframe", "TP", max(IoUFrames[:,0]))
+    print("Plot FN_overframe")
     plot_by_frame_structure(IoUFrames[:,1], dir, "/FN_overframe", "FN", max(IoUFrames[:,1]))
-    plot_by_frame_structure(IoUFrames[:,2], dir, "/FP_overframe", "FP", max(IoUFrames[:,2]))
-    plot_by_frame_structure(IoUFrames[:,3], dir, "/IoU_overframe", "IoU", max(IoUFrames[:,3]))
+    print("Plot FP_overframe")
+    #plot_by_frame_structure(IoUFrames[:,2], dir, "/FP_overframe", "FP", max(IoUFrames[:,2]))
+    print("Plot IoU_overframe")
+    #plot_by_frame_structure(IoUFrames[:,3], dir, "/IoU_overframe", "IoU", max(IoUFrames[:,3]))
 
 def plotF1_by_frame(F1_frames, dir):
     F1_frames = np.array(F1_frames)

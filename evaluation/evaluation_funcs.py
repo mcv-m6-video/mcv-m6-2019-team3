@@ -75,8 +75,8 @@ def compute_mAP(groundtruth_list_original, detections_list, IoU_threshold=0.5):
     # to compute mAP
     max_precision_per_step = list()
     threshold = 1; checkpoint = 0
-    print(groundtruth_size)
-    print(len(detections_list))
+    #print(groundtruth_size)
+    #print(len(detections_list))
     temp = 1000
 
     for n, detection in enumerate(detections_list):
@@ -149,23 +149,28 @@ def compute_mAP(groundtruth_list_original, detections_list, IoU_threshold=0.5):
         #    TP += 1
 
     print("TP={} FN={} FP={}".format(TP, FN, FP))
-    print(TP+FP)
+    #print(TP+FP)
     #print("precision:{}".format(precision))
     #print("recall:{}".format(recall))
     #print(max_precision_per_step)
     mAP = sum(max_precision_per_step)/11
     print("mAP: {}\n".format(mAP))
-    return precision, recall
+    return precision, recall, max_precision_per_step
 
 
-def plot_precision_recall_curve(precision, recall, title="plot", title2=""):
+def plot_precision_recall_curve(precision, recall, max_precision_per_step, title="plot", title2=""):
+
+    thresholds = [1.0, 0.9, 0.8, 0.7, 0.6, 0.5, 0.4, 0.3, 0.2, 0.1, 0.0]
 
     # Data for plotting
     fig, ax = plt.subplots()
     ax.plot(recall, precision)
+    ax.plot(thresholds, max_precision_per_step, 'ro')
 
     ax.set(xlabel='Recall', ylabel='Precision',
            title='Precision-Recall Curve')
+    ax.set_xlim([-0.1, 1.1])
+    ax.set_ylim([-0.1, 1.1])
     ax.grid()
 
     fig.savefig("plots/precision-recall-" + title + title2 + ".png")
