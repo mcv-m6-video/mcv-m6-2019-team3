@@ -105,22 +105,27 @@ def compute_mAP(groundtruth_list_original, detections_list):
         precision.append(TP/(TP+FP))
         recall.append(TP/groundtruth_size)
 
-    for n, (p, r) in enumerate(zip(reversed(precision), reversed(recall))):
-        if(r < threshold or n == len(precision)-1):
-            #print(n)
-            #print(r)
-            max_precision_per_step.append(max(precision[0:n]))
-            threshold -= 0.1
+    for n, r in enumerate(reversed(recall)):
+        if((r < threshold) or n == len(precision)-1):
+            if (r > threshold-0.1):
+                #print(n)
+                #print(r)
+                if n > 0:
+                    max_precision_per_step.append(max(precision[-n:]))
+                else:
+                    max_precision_per_step.append(precision[len(precision)-1])
+                threshold -= 0.1
+            else:
+                max_precision_per_step.append(0)
+                threshold -= 0.1
 
-    """
+    # Check false negatives
     groups = defaultdict(list)
     for obj in groundtruth_list:
         groups[obj.frame].append(obj)
     grouped_groundtruth_list = groups.values()
 
-    # Check false negatives
     for groundtruth in grouped_groundtruth_list:
-
         detection_on_frame = [x for x in detections_list if x.frame == groundtruth[0].frame]
         detection_bboxes = [o.bbox for o in detection_on_frame]
 
@@ -131,15 +136,13 @@ def compute_mAP(groundtruth_list_original, detections_list):
         #print(groundtruth_bboxes)
         #print("TP={} FN={} FP={}".format(TP_temp, FN_temp, FP_temp))
 
-        FP += FP_temp
+        #FP += FP_temp
         FN += FN_temp
-        if (TP_temp > len(groundtruth_bboxes)):
-            TP += 1
-            FP += TP_temp - len(groundtruth_bboxes)
-        else:
-            TP += 1
-    """
-
+        #if (TP_temp > len(groundtruth_bboxes)):
+        #    TP += 1
+        #    FP += TP_temp - len(groundtruth_bboxes)
+        #else:
+        #    TP += 1
 
     print("TP={} FN={} FP={}".format(TP, FN, FP))
     print(TP+FP)
