@@ -86,10 +86,10 @@ def compute_msen(flow_gt, flow_test, threshold=3):
 
 if __name__ == "__main__":
 
-    test = "./datasets/data_stereo_flow/results/LKflow_000157_10.png"
-    gt_noc = "./datasets/data_stereo_flow/training/flow_noc/000157_10.png"
+    test = "../datasets/results_opticalflow_kitti/results/LKflow_000157_10.png"
+    gt_noc = "../datasets/data_stereo_flow/training/flow_noc/000157_10.png"
 
-    flow_gt, flow_test = read_flow_data(gt_noc,test)
+    flow_gt, flow_test = read_flow_data(gt_noc, test)
     
     msen, pepn = compute_msen(flow_gt, flow_test)
 
