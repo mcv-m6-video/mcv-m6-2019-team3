@@ -47,12 +47,10 @@ if __name__ == "__main__":
     precision, recall = compute_mAP(groundtruth_list, detections_list)
     plot_precision_recall_curve(precision, recall, 'gt')
 
-
     # Repeat with modified detections
     print("Computing mAP with modified detections")
     precision, recall = compute_mAP(groundtruth_list, detections_modified)
     plot_precision_recall_curve(precision, recall, 'modified_gt')
-
 
     # T1.3 Calculate mAP with different detectors
     for detector in detectors:
