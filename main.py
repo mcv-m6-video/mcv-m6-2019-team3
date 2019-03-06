@@ -1,4 +1,5 @@
-from evaluation.evaluation_funcs import compute_IoU, compute_mAP, plot_precision_recall_curve
+import numpy as np
+from evaluation.evaluation_funcs import compute_IoU, compute_mAP, plot_precision_recall_curve, plot_multiple_precision_recall_curves
 from utils.reading import read_annotations_file
 from utils.modify_detections import obtain_modified_detections
 from evaluation.temporal_analysis import plotIoU, plotF1, plotIoU_by_frame, plotF1_by_frame
@@ -47,14 +48,23 @@ if __name__ == "__main__":
     precision, recall = compute_mAP(groundtruth_list, detections_list)
     plot_precision_recall_curve(precision, recall, 'gt')
 
+
     # Repeat with modified detections
     print("Computing mAP with modified detections")
-    precision, recall = compute_mAP(groundtruth_list, detections_modified)
-    plot_precision_recall_curve(precision, recall, 'modified_gt')
+    #precision, recall = compute_mAP(groundtruth_list, detections_modified)
+    plot_multiple_precision_recall_curves(groundtruth_list, detections_modified, np.arange(0.5, 1, 0.05), 'modified_gt')
+    for th in [0.5, 0.75]:
+        print("\n IoU Threshold: {}".format(th))
+        precision, recall = compute_mAP(groundtruth_list, detections_modified, IoU_threshold=th)
+        plot_precision_recall_curve(precision, recall, 'modified_gt', str(th))
+
 
     # T1.3 Calculate mAP with different detectors
     for detector in detectors:
         print(detector)
         detections_list = read_annotations_file(detections_path + detector)
-        precision, recall = compute_mAP(groundtruth_list, detections_list)
-        plot_precision_recall_curve(precision, recall, detector)
+        for th in [0.5, 0.75]:
+            print("\n IoU Threshold: {}".format(th))
+            precision, recall = compute_mAP(groundtruth_list, detections_list, IoU_threshold=th)
+            plot_precision_recall_curve(precision, recall, detector, str(th))
+
