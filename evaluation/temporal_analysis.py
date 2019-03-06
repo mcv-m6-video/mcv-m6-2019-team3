@@ -34,6 +34,38 @@ def plotIoU(IoUFrames, dir):
     # plt.show()
     plt.close()
 
+def plotIoU_by_frame(IoUFrames, dir):
+    IoUFrames = np.array(IoUFrames)
+
+    #plotIoU_by_frame_structure(IoUFrames, 0, dir, "/TP_overframe", "TP")
+    plot_by_frame_structure(IoUFrames, 1, dir, "/FN_overframe", "FN", max(IoUFrames[:,1]))
+    plot_by_frame_structure(IoUFrames, 2, dir, "/FP_overframe", "FP", max(IoUFrames[:,2]))
+    plot_by_frame_structure(IoUFrames, 3, dir, "/IoU_overframe", "IoU", max(IoUFrames[:,3]))
+
+def plotF1_by_frame(F1_frames, dir):
+    F1_frames = np.array(F1_frames)
+
+    plot_by_frame_structure(F1_frames, 0, dir, "/F1_overframe", "F1 Score", max(F1_frames[:,0]))
+    plot_by_frame_structure(F1_frames, 1, dir, "/precision_overframe", "Precision", max(F1_frames[:,1]))
+    plot_by_frame_structure(F1_frames, 2, dir, "/recall_overframe", "Recall", max(F1_frames[:,2]))
+
+def plot_by_frame_structure(IoUFrames, index, dir, folder, ylabel, max_y):
+    if not os.path.exists(dir+folder):
+        os.makedirs(dir+folder)
+    IoUFrames = np.array(IoUFrames)
+
+    for n, IoUFrame in enumerate(IoUFrames):
+        if n == 0:
+            plt.plot(IoUFrames[0])
+        else:
+            plt.plot(IoUFrames[0:n])
+
+        plt.ylabel(ylabel)
+        plt.xlabel("#frame")
+        plt.axis([0, len(IoUFrames), -0.1, max_y + 0.1])
+        plt.savefig(dir+folder+"/{:04d}.png".format(n))
+        # plt.show()
+        plt.close()
 
 def plotF1(F1_frames, dir):
     if not os.path.exists(dir):
