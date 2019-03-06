@@ -28,17 +28,17 @@ if __name__ == "__main__":
 
     # Compute IoU
     print("\nComputing IoU")
-    IoUFrames, F1Frames= compute_IoU(video_path, groundtruth_list, detections_list)
-    plotIoU(IoUFrames, "./plots/IOUplots")
-    plotIoU_by_frame(IoUFrames, "./plots/IOUplots")
-    plotF1(F1Frames, "./plots/F1plots")
-    plotF1_by_frame(IoUFrames, "./plots/F1plots")
+    #IoUFrames, F1Frames= compute_IoU(video_path, groundtruth_list, detections_list)
+    #plotIoU(IoUFrames, "./plots/IOUplots")
+    #plotIoU_by_frame(IoUFrames, "./plots/IOUplots")
+    #plotF1(F1Frames, "./plots/F1plots")
+    #plotF1_by_frame(F1Frames, "./plots/F1plots")
 
     # Repeat with modified detections
     print("Computing IoU with modified detections")
     IoUFrames, F1Frames = compute_IoU(video_path, groundtruth_list, detections_modified)
-    plotIoU(F1Frames, "./plots/IOUplots_noise")
-    plotIoU_by_frame(F1Frames, "./plots/IOUplots_noise")
+    plotIoU(IoUFrames, "./plots/IOUplots_noise")
+    plotIoU_by_frame(IoUFrames, "./plots/IOUplots_noise")
     plotF1(F1Frames, "./plots/F1plots_noise")
     plotF1_by_frame(F1Frames, "./plots/F1plots_noise")
 
