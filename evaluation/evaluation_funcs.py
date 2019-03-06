@@ -1,8 +1,10 @@
 from math import ceil
+from copy import deepcopy
 
 import cv2
 import numpy as np
 import matplotlib.pyplot as plt
+from collections import defaultdict
 
 from evaluation.bbox_iou import bbox_iou
 
@@ -54,7 +56,9 @@ def compute_IoU(video_path, groundtruth_list, detections_list):
     return IoUFrames, F1_frames
 
 
-def compute_mAP(groundtruth_list, detections_list):
+def compute_mAP(groundtruth_list_original, detections_list):
+
+    groundtruth_list = deepcopy(groundtruth_list_original)
 
     # Sort detections by confidence
     detections_list.sort(key=lambda x: x.confidence, reverse=True)
@@ -66,51 +70,87 @@ def compute_mAP(groundtruth_list, detections_list):
 
     # to compute mAP
     max_precision_per_step = list()
-    threshold = ceil((1/groundtruth_size)*10)/10
-    checkpoint = 0
-
+    threshold = 1; checkpoint = 0
+    print(groundtruth_size)
+    print(len(detections_list))
+    temp = 1000
 
     for n, detection in enumerate(detections_list):
+        match_flag = False
+        if threshold != temp:
+            #print(threshold)
+            temp = threshold
+
         # Get groundtruth of the target frame
         gt_on_frame = [x for x in groundtruth_list if x.frame == detection.frame]
-        gt_bboxes = [o.bbox for o in gt_on_frame]
+        gt_bboxes = [(o.bbox, o.confidence) for o in gt_on_frame]
 
-        # Check if the detection is correct
-        TP_temp, FN_temp, FP_temp = performance_accumulation_window([detection.bbox], gt_bboxes)
-        if(TP_temp == 1):
-            TP += 1
-        else:
+        #print(gt_bboxes)
+        for gt_bbox in gt_bboxes:
+            #print(gt_bbox[0])
+            #print(detection.bbox)
+            iou = bbox_iou(gt_bbox[0], detection.bbox)
+            if iou > 0.5 and gt_bbox[1] > 0.9:
+                match_flag = True
+                TP += 1
+                gt_used = next((x for x in groundtruth_list if x.frame == detection.frame and x.bbox == gt_bbox[0]), None)
+                gt_used.confidence = 0
+                break
+
+        if match_flag == False:
             FP += 1
+        match_flag = False
 
         # Save metrics
         precision.append(TP/(TP+FP))
         recall.append(TP/groundtruth_size)
 
-        # Get max precision for each 0.05 step of confidence
-        if recall[-1] > threshold or n == len(detections_list)-1:
-            max_precision_per_step.append(max(precision[checkpoint:len(precision)-2]))
+    for n, (p, r) in enumerate(zip(reversed(precision), reversed(recall))):
+        if(r < threshold or n == len(precision)-1):
+            #print(n)
+            #print(r)
+            max_precision_per_step.append(max(precision[0:n]))
+            threshold -= 0.1
 
-            checkpoint = len(precision)
-            threshold += 0.1
+    """
+    groups = defaultdict(list)
+    for obj in groundtruth_list:
+        groups[obj.frame].append(obj)
+    grouped_groundtruth_list = groups.values()
 
     # Check false negatives
-    for groundtruth in groundtruth_list:
-        detection_on_frame = [x for x in detections_list if x.frame == groundtruth.frame]
+    for groundtruth in grouped_groundtruth_list:
+
+        detection_on_frame = [x for x in detections_list if x.frame == groundtruth[0].frame]
         detection_bboxes = [o.bbox for o in detection_on_frame]
 
-        TP_temp, FN_temp, FP_temp = performance_accumulation_window([groundtruth.bbox], detection_bboxes)
-        if (TP_temp == 0):
-            FN += 1
+        groundtruth_bboxes = [o.bbox for o in groundtruth]
+
+        TP_temp, FN_temp, FP_temp = performance_accumulation_window(detection_bboxes, groundtruth_bboxes)
+        #print(detection_bboxes)
+        #print(groundtruth_bboxes)
+        #print("TP={} FN={} FP={}".format(TP_temp, FN_temp, FP_temp))
+
+        FP += FP_temp
+        FN += FN_temp
+        if (TP_temp > len(groundtruth_bboxes)):
+            TP += 1
+            FP += TP_temp - len(groundtruth_bboxes)
+        else:
+            TP += 1
+    """
+
 
     print("TP={} FN={} FP={}".format(TP, FN, FP))
+    print(TP+FP)
     #print("precision:{}".format(precision))
     #print("recall:{}".format(recall))
-    #print(max_precision_per_step)
+    print(max_precision_per_step)
     mAP = sum(max_precision_per_step)/11
     print("mAP: {}\n".format(mAP))
-    plot_precision_recall_curve(precision, recall)
+    return precision, recall
 
-def plot_precision_recall_curve(precision, recall):
+def plot_precision_recall_curve(precision, recall, title="plot"):
 
     # Data for plotting
     fig, ax = plt.subplots()
@@ -120,7 +160,7 @@ def plot_precision_recall_curve(precision, recall):
            title='Precision-Recall Curve')
     ax.grid()
 
-    fig.savefig("plots/precision-recall.png")
+    fig.savefig("plots/precision-recall-"+ title + ".png")
     # plt.show()
 
 # def performance_accumulation_pixel(pixel_candidates, pixel_annotation):

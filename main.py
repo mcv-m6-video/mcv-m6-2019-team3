@@ -25,25 +25,27 @@ if __name__ == "__main__":
 
     # Compute IoU
     print("\nComputing IoU")
-    IoUFrames, F1Frames= compute_IoU(video_path, groundtruth_list, detections_list)
-    plotIoU(IoUFrames, "./plots/IOUplots")
-    plotF1(F1Frames, "./plots/F1plots")
+    #IoUFrames, F1Frames= compute_IoU(video_path, groundtruth_list, detections_list)
+    #plotIoU(IoUFrames, "./plots/IOUplots")
+    #plotF1(F1Frames, "./plots/F1plots")
 
     # Repeat with modified detections
     print("Computing IoU with modified detections")
-    IoUFrames, F1Frames = compute_IoU(video_path, groundtruth_list, detections_modified)
-    plotIoU(IoUFrames, "./plots/IOUplots_noise")
-    plotF1(F1Frames, "./plots/F1plots_noise")
+    #IoUFrames, F1Frames = compute_IoU(video_path, groundtruth_list, detections_modified)
+    #plotIoU(IoUFrames, "./plots/IOUplots_noise")
+    #plotF1(F1Frames, "./plots/F1plots_noise")
 
     #Compute mAP
     print("\nComputing mAP")
     precision, recall = compute_mAP(groundtruth_list, detections_list)
     plot_precision_recall_curve(precision, recall, 'gt')
 
+
     # Repeat with modified detections
     print("Computing mAP with modified detections")
     precision, recall = compute_mAP(groundtruth_list, detections_modified)
     plot_precision_recall_curve(precision, recall, 'modified_gt')
+
 
     # Calculate mAP with different detectors
     for detector in detectors:

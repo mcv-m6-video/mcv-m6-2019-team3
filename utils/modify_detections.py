@@ -42,7 +42,7 @@ def obtain_modified_detections(detections):
     for detection in detections:
         if not delete_detection():
             frame_detections.append(detection)
-        for i in range(random.randint(1, 6)):
+        for i in range(random.randint(0, 1)):
             frame_detections.append(add_noise(detection))
         new_detection = generate_detection(detection.frame)
         if new_detection:
