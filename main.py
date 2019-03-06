@@ -1,46 +1,27 @@
-import cv2
-import numpy as np
-
-import xml.etree.ElementTree as ET
-from typing import Iterator, Tuple
-
-from evaluation.evaluation_funcs import compute_IoU, performance_evaluation_window, compute_mAP
-from utils.reading import read_annotations, read_detections, read_annotations_from_txt
+from evaluation.evaluation_funcs import compute_IoU, compute_mAP, plot_precision_recall_curve
+from utils.reading import read_annotations_file
 from utils.modify_detections import obtain_modified_detections
 from evaluation.temporal_analysis import plotIoU, plotF1
 
 
 video_path = "./datasets/AICity_data/train/S03/c010/vdo.avi"
-
-#groundtruth_path = "./datasets/AICity_data/train/S03/c010/Anotation_40secs_AICITY_S03_C010.xml"
-#groundtruth_path = "./datasets/AICity_data/train/S03/c010/Anotation_740-1090_AICITY_S03_C010.xml"
-#groundtruth_path = "./6_vdo.xml"
-#groundtruth_path = "./datasets/AICity_data/train/S03/c010/det/det_yolo3.txt"
 groundtruth_path = "./datasets/AICity_data/train/S03/c010/gt/gt.txt"
-
-detections_path = "./datasets/AICity_data/train/S03/c010/det/det_ssd512.txt"
+detections_path = "./datasets/AICity_data/train/S03/c010/det/"
+detectors = ["det_ssd512.txt", "det_mask_rcnn.txt", "det_yolo3.txt"]
 
 if __name__ == "__main__":
 
     # Get groundtruth
     print("Getting groundtruth")
-    if (groundtruth_path.endswith('.txt')):
-        groundtruth_list = read_annotations_from_txt(groundtruth_path)
-    elif (groundtruth_path.endswith('.xml')):
-        capture = cv2.VideoCapture(video_path)
-        root = ET.parse(groundtruth_path).getroot()
-        groundtruth_list, images = read_annotations(capture, root, 40)
-    else:
-        raise Exception('Incompatible filetype')
+    groundtruth_list = read_annotations_file(groundtruth_path)
 
     # Get detections
     print("Getting detections")
-    if (detections_path.endswith('.txt')):
-        detections_list = read_annotations_from_txt(detections_path)
-    elif (detections_path.endswith('.xml')):
-        detections_list = read_detections(detections_path)
-    else:
-        raise Exception('Incompatible filetype')
+    detections_list = read_annotations_file(groundtruth_path)
+
+    # Get modified detections
+    print("Computing modified detections")
+    detections_modified = obtain_modified_detections(detections_list)
 
     # Compute IoU
     print("\nComputing IoU")
@@ -50,12 +31,23 @@ if __name__ == "__main__":
 
     # Repeat with modified detections
     print("Computing IoU with modified detections")
-    detections_modified = obtain_modified_detections(detections_list)
     IoUFrames, F1Frames = compute_IoU(video_path, groundtruth_list, detections_modified)
     plotIoU(IoUFrames, "./plots/IOUplots_noise")
     plotF1(F1Frames, "./plots/F1plots_noise")
 
-
     #Compute mAP
     print("\nComputing mAP")
-    compute_mAP(groundtruth_list, detections_list)
+    precision, recall = compute_mAP(groundtruth_list, detections_list)
+    plot_precision_recall_curve(precision, recall, 'gt')
+
+    # Repeat with modified detections
+    print("Computing mAP with modified detections")
+    precision, recall = compute_mAP(groundtruth_list, detections_modified)
+    plot_precision_recall_curve(precision, recall, 'modified_gt')
+
+    # Calculate mAP with different detectors
+    for detector in detectors:
+        print(detector)
+        detections_list = read_annotations_file(detections_path + detector)
+        precision, recall = compute_mAP(groundtruth_list, detections_list)
+        plot_precision_recall_curve(precision, recall, detector)

@@ -3,7 +3,7 @@
 *.ipynb
 frames/
 frames_out/
-plots/
+datasets/AICity_data/train/S03/c010/vdo.avi
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

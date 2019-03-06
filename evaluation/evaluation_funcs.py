@@ -97,7 +97,16 @@ def compute_mAP(groundtruth_list, detections_list):
             checkpoint = len(precision)
             threshold += 0.1
 
-    print("TP={} FN={} FP={}".format(TP, groundtruth_size-TP, FP))
+    # Check false negatives
+    for groundtruth in groundtruth_list:
+        detection_on_frame = [x for x in detections_list if x.frame == groundtruth.frame]
+        detection_bboxes = [o.bbox for o in detection_on_frame]
+
+        TP_temp, FN_temp, FP_temp = performance_accumulation_window([groundtruth.bbox], detection_bboxes)
+        if (TP_temp == 0):
+            FN += 1
+
+    print("TP={} FN={} FP={}".format(TP, FN, FP))
     #print("precision:{}".format(precision))
     #print("recall:{}".format(recall))
     #print(max_precision_per_step)
