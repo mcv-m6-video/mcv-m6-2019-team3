@@ -15,7 +15,8 @@ video_path = "./datasets/AICity_data/train/S03/c010/vdo.avi"
 #groundtruth_path = "./datasets/AICity_data/train/S03/c010/Anotation_40secs_AICITY_S03_C010.xml"
 #groundtruth_path = "./datasets/AICity_data/train/S03/c010/Anotation_740-1090_AICITY_S03_C010.xml"
 #groundtruth_path = "./6_vdo.xml"
-groundtruth_path = "./datasets/AICity_data/train/S03/c010/det/det_yolo3.txt"
+#groundtruth_path = "./datasets/AICity_data/train/S03/c010/det/det_yolo3.txt"
+groundtruth_path = "./datasets/AICity_data/train/S03/c010/gt/gt.txt"
 
 detections_path = "./datasets/AICity_data/train/S03/c010/det/det_ssd512.txt"
 
