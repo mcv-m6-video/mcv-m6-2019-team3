@@ -60,7 +60,7 @@ def compute_IoU(video_path, groundtruth_list, detections_list):
     return IoUFrames, F1_frames
 
 
-def compute_mAP(groundtruth_list_original, detections_list):
+def compute_mAP(groundtruth_list_original, detections_list, IoU_threshold=0.5):
 
     groundtruth_list = deepcopy(groundtruth_list_original)
 
@@ -94,7 +94,7 @@ def compute_mAP(groundtruth_list_original, detections_list):
             #print(gt_bbox[0])
             #print(detection.bbox)
             iou = bbox_iou(gt_bbox[0], detection.bbox)
-            if iou > 0.5 and gt_bbox[1] > 0.9:
+            if iou > IoU_threshold and gt_bbox[1] > 0.9:
                 match_flag = True
                 TP += 1
                 gt_used = next((x for x in groundtruth_list if x.frame == detection.frame and x.bbox == gt_bbox[0]), None)
@@ -157,7 +157,8 @@ def compute_mAP(groundtruth_list_original, detections_list):
     print("mAP: {}\n".format(mAP))
     return precision, recall
 
-def plot_precision_recall_curve(precision, recall, title="plot"):
+
+def plot_precision_recall_curve(precision, recall, title="plot", title2=""):
 
     # Data for plotting
     fig, ax = plt.subplots()
@@ -167,8 +168,22 @@ def plot_precision_recall_curve(precision, recall, title="plot"):
            title='Precision-Recall Curve')
     ax.grid()
 
-    fig.savefig("plots/precision-recall-"+ title + ".png")
+    fig.savefig("plots/precision-recall-" + title + title2 + ".png")
     # plt.show()
+
+
+def plot_multiple_precision_recall_curves(groundtruth_list, detections_list, thresholds, detector):
+    fig, ax = plt.subplots()
+    for th in thresholds:
+        precision, recall = compute_mAP(groundtruth_list, detections_list, IoU_threshold=th)
+        ax.plot(recall, precision, label="threshold: %.2f" % th)
+    ax.set(xlabel='Recall', ylabel='Precision',
+           title='Precision-Recall Curve')
+    ax.grid()
+    ax.legend(loc='best')
+
+    fig.savefig("plots/precision-recall-thresholds" + detector + ".png")
+
 
 def performance_accumulation_window(detections, annotations):
     """ 
@@ -209,6 +224,7 @@ def performance_accumulation_window(detections, annotations):
     FP = np.sum(detections_used==0)
 
     return [TP,FN,FP]
+
 
 def performance_evaluation_window(TP, FN, FP):
     """
