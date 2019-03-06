@@ -1,7 +1,7 @@
 from evaluation.evaluation_funcs import compute_IoU, compute_mAP, plot_precision_recall_curve
 from utils.reading import read_annotations_file
 from utils.modify_detections import obtain_modified_detections
-from evaluation.temporal_analysis import plotIoU, plotF1
+from evaluation.temporal_analysis import plotIoU, plotF1, plotIoU_by_frame, plotF1_by_frame
 
 
 video_path = "./datasets/AICity_data/train/S03/c010/vdo.avi"
@@ -22,7 +22,6 @@ if __name__ == "__main__":
     print("Getting detections")
     detections_list = read_annotations_file(groundtruth_path)
 
-    print(detections_list)
     # Get modified detections
     print("Computing modified detections")
     detections_modified = obtain_modified_detections(detections_list)
@@ -31,13 +30,17 @@ if __name__ == "__main__":
     print("\nComputing IoU")
     IoUFrames, F1Frames= compute_IoU(video_path, groundtruth_list, detections_list)
     plotIoU(IoUFrames, "./plots/IOUplots")
+    plotIoU_by_frame(IoUFrames, "./plots/IOUplots")
     plotF1(F1Frames, "./plots/F1plots")
+    plotF1_by_frame(IoUFrames, "./plots/F1plots")
 
     # Repeat with modified detections
     print("Computing IoU with modified detections")
     IoUFrames, F1Frames = compute_IoU(video_path, groundtruth_list, detections_modified)
     plotIoU(IoUFrames, "./plots/IOUplots_noise")
+    plotIoU_by_frame(IoUFrames, "./plots/IOUplots_noise")
     plotF1(F1Frames, "./plots/F1plots_noise")
+    plotF1_by_frame(IoUFrames, "./plots/F1plots_noise")
 
     # T1.2 Compute mAP
     print("\nComputing mAP")
