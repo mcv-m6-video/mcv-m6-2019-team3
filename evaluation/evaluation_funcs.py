@@ -12,7 +12,7 @@ from evaluation.bbox_iou import bbox_iou
 def compute_IoU(video_path, groundtruth_list, detections_list):
 
     capture = cv2.VideoCapture(video_path)
-    n = 0; TP = 0; FN = 0; FP = 0
+    n = 0; TP = 0; FN = 0; FP = 0; IoU = 0
     IoUFrames = []
     F1_frames = []
     while capture.isOpened():
@@ -35,7 +35,10 @@ def compute_IoU(video_path, groundtruth_list, detections_list):
         recall = 0
         F1_score = 0
         if TP_temp is not 0:
-            IoU_temp = float(TP_temp) / float(TP_temp+FP_temp+FN_temp)
+            IoU_temp_detections = []
+            for det_bbox in detections_bboxes:
+                IoU_temp_detections.append(np.max([bbox_iou(det_bbox, gt_bbox) for gt_bbox in gt_bboxes]))
+            IoU_temp = np.mean(IoU_temp_detections)
             recall = float(TP_temp) / float(TP_temp+FP_temp)
             precision = float(TP_temp) / float(TP_temp+FN_temp)
             F1_score = 2*recall*precision / (recall+precision)
@@ -43,10 +46,11 @@ def compute_IoU(video_path, groundtruth_list, detections_list):
         TP += TP_temp
         FN += FN_temp
         FP += FP_temp
+        IoU += IoU_temp
         IoUFrames.append([TP_temp, FN_temp, FP_temp, IoU_temp])
         F1_frames.append([F1_score, precision, recall])
         n += 1
-    IoU = float(TP) / float(TP+FP+FN)
+    IoU = IoU/n
     recall = float(TP) / float(TP+FP)
     precision = float(TP) / float(TP+FN)
     F1_score = 2*recall*precision / (recall+precision)
