@@ -29,13 +29,13 @@ def get_pixels_single_gaussian_model(video_path, last_frame=int(2141*0.25)):
     return gauss_mean, gauss_std
 
 
-def get_frame_bg_single_gaussian_model(img, model_mean, model_std, alpha):
-    background = (abs(img - model_mean) < alpha*(model_std+2))
+def get_frame_mask_single_gaussian_model(img, model_mean, model_std, alpha):
+    foreground = (abs(img - model_mean) >= alpha*(model_std+2))
 
-    return background
+    return foreground
 
 
-def get_total_bg_single_gaussian_model(video_path, first_frame, model_mean, model_std, alpha, rho, adaptive=False):
+def get_fg_mask_single_gaussian_model(video_path, first_frame, model_mean, model_std, alpha, rho, adaptive=False):
     capture = cv2.VideoCapture(video_path)
     n_frame = 0
 
@@ -44,10 +44,10 @@ def get_total_bg_single_gaussian_model(video_path, first_frame, model_mean, mode
         if not valid:
             break
         if n_frame == first_frame:
-            background = np.zeros((image.shape[0], image.shape[1], 2141 - first_frame))
+            foreground = np.zeros((image.shape[0], image.shape[1], 2141 - first_frame))
         if n_frame > first_frame:
             image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-            background[:, :, n_frame-first_frame-1] = get_frame_bg_single_gaussian_model(image, model_mean, model_std, alpha)
+            foreground[:, :, n_frame-first_frame-1] = get_frame_mask_single_gaussian_model(image, model_mean, model_std, alpha)
 
             if adaptive:
                 model_mean = rho*image + (1-rho)*model_mean
@@ -55,7 +55,7 @@ def get_total_bg_single_gaussian_model(video_path, first_frame, model_mean, mode
 
         n_frame +=1
 
-    return background
+    return foreground
 
 
 def single_gaussian_model(video_path, alpha, rho, adaptive=False):
@@ -63,7 +63,7 @@ def single_gaussian_model(video_path, alpha, rho, adaptive=False):
     mean, std = get_pixels_single_gaussian_model(video_path)
     print('Gaussian computed for pixels')
     print('Extracting Background...')
-    bg = get_total_bg_single_gaussian_model(video_path, first_frame=int(2141 * 0.25), model_mean=mean, model_std=std,
+    bg = get_fg_mask_single_gaussian_model(video_path, first_frame=int(2141 * 0.25), model_mean=mean, model_std=std,
                                             alpha=alpha, rho=rho, adaptive=adaptive)
     print('Extracted background with shape {}'.format(bg.shape))
 
@@ -77,7 +77,7 @@ if __name__ == '__main__':
     #print("Getting groundtruth")
     #groundtruth_list = read_annotations_file(groundtruth_path)          # gt.txt
 
-    single_gaussian_model(video_path, alpha=2, rho=1, adaptive=True)
+    single_gaussian_model(video_path, alpha=2.5, rho=1, adaptive=True)
 
 
 
