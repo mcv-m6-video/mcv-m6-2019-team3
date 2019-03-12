@@ -78,7 +78,7 @@ def grid_search():
 
 if __name__ == "__main__":
     export_frames = False
-    best_pairs = True
+    best_pairs = False
 
     # Evaluate against groundtruth
     print("Getting groundtruth")
@@ -98,7 +98,7 @@ if __name__ == "__main__":
             # This function lasts about 10 minutes
             detections = single_gaussian_model(video_path, alpha=2.5, rho=1, adaptive=True, export_frames=export_frames)
 
-        plot_bboxes(video_path, groundtruth_list, detections)
+        #plot_bboxes(video_path, groundtruth_list, detections)
 
     print('Compute mAP0.5')
     gt_filtered = [x for x in groundtruth_list if x.frame > int(2141*0.25)]         # filter 25% of gt
