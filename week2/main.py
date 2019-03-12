@@ -29,7 +29,8 @@ if __name__ == "__main__":
     #plot_bboxes(video_path, groundtruth_list, detections)
 
     print('Compute mAP0.5')
-    compute_mAP(groundtruth_list, detections)
+    gt_filtered = [x for x in groundtruth_list if x.frame > int(2141*0.25)]         # filter 25% of gt
+    compute_mAP(gt_filtered, detections)
 
 
     # State-of-the-art background subtractors
