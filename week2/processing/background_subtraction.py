@@ -1,7 +1,9 @@
 import cv2
 import os
+import pickle
 
 import numpy as np
+from tqdm import tqdm
 
 from utils.morphology_utils import morphological_filtering
 from utils.candidate_generation_window import visualize_boxes, candidate_generation_window_ccl
@@ -11,6 +13,8 @@ from utils.candidate_generation_window import visualize_boxes, candidate_generat
 def get_pixels_single_gaussian_model(video_path, last_frame=int(2141*0.25)):
     capture = cv2.VideoCapture(video_path)
     n_frame = 0
+
+    pbar = tqdm(total=last_frame)
 
     while capture.isOpened() and n_frame <= last_frame:
         valid, image = capture.read()
@@ -28,9 +32,15 @@ def get_pixels_single_gaussian_model(video_path, last_frame=int(2141*0.25)):
         #gt_on_frame = [x for x in groundtruth_list if x.frame == n]
         #gt_bboxes = [o.bbox for o in gt_on_frame]
 
+        pbar.update(1)
         n_frame += 1
 
+    pbar.close()
+
+    print("\nComputing mean...")
     gauss_mean = gaussians.mean(axis=0)
+
+    print("Computing standard deviation...")
     gauss_std = gaussians.std(axis=0)
 
     return gauss_mean, gauss_std
@@ -44,6 +54,7 @@ def get_fg_mask_single_gaussian_model(video_path, first_frame, model_mean, model
     capture = cv2.VideoCapture(video_path)
     n_frame = 0
     detections = []
+    pbar = tqdm(total=2141 - first_frame)
 
     while capture.isOpened():
         valid, image = capture.read()
@@ -63,14 +74,25 @@ def get_fg_mask_single_gaussian_model(video_path, first_frame, model_mean, model
                 model_mean = rho*image + (1-rho)*model_mean
                 model_std = np.sqrt(rho*(image - model_mean)**2 + (1-rho)*model_std**2)
 
+        pbar.update(1)
         n_frame +=1
+
+    pbar.close()
 
     return foreground, detections
 
 
 def single_gaussian_model(video_path, alpha, rho, adaptive=False, export_frames=False):
+
     print('Computing Gaussian model...')
-    mean, std = get_pixels_single_gaussian_model(video_path)
+    if os.path.exists('mean_std.pkl'):
+        with open('mean_std.pkl', 'rb') as p:
+            mean, std = pickle.load(p)
+    else:
+        mean, std = get_pixels_single_gaussian_model(video_path)
+        with open('mean_std.pkl', 'wb') as f:
+            pickle.dump([mean, std], f)
+
     print('Gaussian computed for pixels')
     print('Extracting Background...')
     bg, detections = get_fg_mask_single_gaussian_model(video_path, first_frame=int(2141 * 0.25), model_mean=mean, model_std=std,
