@@ -1,3 +1,5 @@
+import cv2
+
 from skimage.measure import label, regionprops
 from matplotlib import pyplot as plt
 import matplotlib.patches as mpatches
@@ -28,3 +30,21 @@ def visualize_boxes(pixel_candidates, window_candidates):
         ax.add_patch(rect)
 
     plt.show()
+
+def plot_bboxes(video_path, groundtruth, detections):
+    capture = cv2.VideoCapture(video_path)
+    n_frame = 0
+
+    while capture.isOpened():
+        valid, image = capture.read()
+        if not valid:
+            break
+
+        if n_frame > 900:
+            # Get groundtruth of the target frame
+            gt_on_frame = [x for x in groundtruth if x.frame == n_frame]
+            gt_bboxes = [o.bbox for o in gt_on_frame]
+
+            visualize_boxes(image, gt_bboxes)
+
+        n_frame += 1
