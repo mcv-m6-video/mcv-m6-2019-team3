@@ -72,11 +72,9 @@ def grid_search():
     scores = np.array(gs.results).reshape(len(parameters['alpha']), len(parameters['rho']))
 
 
-
-
 if __name__ == "__main__":
-    export_frames = False
-    best_pairs = True
+    export_frames = True
+    best_pairs = False
 
     # Evaluate against groundtruth
     print("Getting groundtruth")
@@ -89,12 +87,12 @@ if __name__ == "__main__":
 
     else:
         # Gaussian modelling
-        if os.path.exists('detections.pkl'):
+        if os.path.exists('detections.pkl') and not export_frames:
             with open('detections.pkl', 'rb') as p:
                 detections = pickle.load(p)
         else:
             # This function lasts about 10 minutes
-            detections = single_gaussian_model(video_path, alpha=2.5, rho=1, adaptive=True, export_frames=export_frames)
+            detections = single_gaussian_model(video_path, alpha=2.5, rho=0.5, adaptive=True, export_frames=export_frames)
 
         #plot_bboxes(video_path, groundtruth_list, detections)
 
@@ -103,6 +101,12 @@ if __name__ == "__main__":
     compute_mAP(gt_filtered, detections)
 
     # State-of-the-art background subtractors
-    #BackgroundSubtractor(video_path, export_frames=export_frames)
+    detectionsMOG, detectionsMOG2, detectionsGMG = BackgroundSubtractor(video_path, export_frames=export_frames)
+    print('mAP0.5 for MOG:')
+    compute_mAP(groundtruth_list, detectionsMOG)
+    print('mAP0.5 for MOG2:')
+    compute_mAP(groundtruth_list, detectionsMOG2)
+    print('mAP0.5 for GMG:')
+    compute_mAP(groundtruth_list, detectionsGMG)
 
 
