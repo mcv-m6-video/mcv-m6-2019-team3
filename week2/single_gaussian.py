@@ -1,6 +1,10 @@
 #from week1.utils.reading import read_annotations_file
+from matplotlib import pyplot as plt
 import numpy as np
 import cv2
+
+from week2.morphology_utils import morphological_filtering
+from week2.candidate_generation_window import visualize_boxes, candidate_generation_window_ccl
 
 
 def get_pixels_single_gaussian_model(video_path, last_frame=int(2141*0.25)):
@@ -31,6 +35,8 @@ def get_pixels_single_gaussian_model(video_path, last_frame=int(2141*0.25)):
 
 def get_frame_mask_single_gaussian_model(img, model_mean, model_std, alpha):
     foreground = (abs(img - model_mean) >= alpha*(model_std+2))
+#    plt.imshow(foreground)
+#    plt.show()
 
     return foreground
 
@@ -47,7 +53,12 @@ def get_fg_mask_single_gaussian_model(video_path, first_frame, model_mean, model
             foreground = np.zeros((image.shape[0], image.shape[1], 2141 - first_frame))
         if n_frame > first_frame:
             image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-            foreground[:, :, n_frame-first_frame-1] = get_frame_mask_single_gaussian_model(image, model_mean, model_std, alpha)
+            foreground[:, :, n_frame-first_frame-1] = morphological_filtering(get_frame_mask_single_gaussian_model
+                                                                              (image, model_mean, model_std, alpha))
+            window_candidates = candidate_generation_window_ccl(foreground[:, :, n_frame-first_frame-1])
+            visualize_boxes(image, window_candidates)
+#            plt.imshow(foreground[:, :, n_frame-first_frame-1])
+#            plt.show()
 
             if adaptive:
                 model_mean = rho*image + (1-rho)*model_mean
