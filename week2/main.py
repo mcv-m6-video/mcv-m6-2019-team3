@@ -13,8 +13,8 @@ if __name__ == "__main__":
     export_frames = False
 
     # Gaussian modelling
-    if os.path.exists('mean_std.pkl'):
-        with open('mean_std.pkl', 'rb') as p:
+    if os.path.exists('detections.pkl'):
+        with open('detections.pkl', 'rb') as p:
             detections = pickle.load(p)
     else:
         # This function lasts about 10 minutes
