@@ -21,12 +21,17 @@ def candidate_generation_window_ccl(n_frame, mask):
     return window_candidates
 
 
-def visualize_boxes(pixel_candidates, window_candidates):
+def visualize_boxes(pixel_candidates, gt_candidate, detection_candidate):
     fig, ax = plt.subplots(figsize=(10, 6))
     ax.imshow(pixel_candidates)
-    for candidate in window_candidates:
-        minc, minr, width, height = candidate
-        rect = mpatches.Rectangle((minc, minr), width, height, fill=False, edgecolor='red', linewidth=2)
+    for candidate in gt_candidate:
+        minc, minr, maxc, maxr = candidate
+        rect = mpatches.Rectangle((minc, minr), maxc-minc+1, maxr-minr+1, fill=False, edgecolor='green', linewidth=2)
+        ax.add_patch(rect)
+
+    for candidate in detection_candidate:
+        minc, minr, maxc, maxr = candidate
+        rect = mpatches.Rectangle((minc, minr), maxc-minc+1, maxr-minr+1, fill=False, edgecolor='red', linewidth=2)
         ax.add_patch(rect)
 
     plt.show()
@@ -44,7 +49,8 @@ def plot_bboxes(video_path, groundtruth, detections):
             # Get groundtruth of the target frame
             gt_on_frame = [x for x in groundtruth if x.frame == n_frame]
             gt_bboxes = [o.bbox for o in gt_on_frame]
-
-            visualize_boxes(image, gt_bboxes)
+            detections_on_frame = [x for x in detections if x.frame == n_frame]
+            detections_bboxes = [o.bbox for o in detections_on_frame]
+            visualize_boxes(image, gt_bboxes, detections_bboxes)
 
         n_frame += 1

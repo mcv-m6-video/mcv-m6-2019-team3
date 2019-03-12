@@ -24,7 +24,7 @@ if __name__ == "__main__":
     #Evaluate against groundtruth
     print("Getting groundtruth")
     groundtruth_list = read_annotations_file(groundtruth_xml_path, video_path)          # gt.txt
-    print(groundtruth_list)
+    #print(groundtruth_list)
 
     plot_bboxes(video_path, groundtruth_list, detections)
 
