@@ -3,8 +3,8 @@ import os
 
 import numpy as np
 
-from week2.utils.morphology_utils import morphological_filtering
-from week2.utils.candidate_generation_window import visualize_boxes, candidate_generation_window_ccl
+from utils.morphology_utils import morphological_filtering
+from utils.candidate_generation_window import visualize_boxes, candidate_generation_window_ccl
 
 #from week1.utils.reading import read_annotations_file
 
@@ -16,11 +16,13 @@ def get_pixels_single_gaussian_model(video_path, last_frame=int(2141*0.25)):
         valid, image = capture.read()
         if not valid:
             break
+
         if n_frame==0:
-            gaussians = np.zeros((image.shape[0], image.shape[1], last_frame+1))
+            gaussians = np.zeros((last_frame+1, image.shape[0], image.shape[1]))
+
         image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
 
-        gaussians[:, :, n_frame] = image
+        gaussians[n_frame, :, :] = image
 
         # Get groundtruth and detections from frame n
         #gt_on_frame = [x for x in groundtruth_list if x.frame == n]
@@ -28,8 +30,8 @@ def get_pixels_single_gaussian_model(video_path, last_frame=int(2141*0.25)):
 
         n_frame += 1
 
-    gauss_mean = gaussians.mean(axis=2)
-    gauss_std = gaussians.std(axis=2)
+    gauss_mean = gaussians.mean(axis=0)
+    gauss_std = gaussians.std(axis=0)
 
     return gauss_mean, gauss_std
 
@@ -49,13 +51,10 @@ def get_fg_mask_single_gaussian_model(video_path, first_frame, model_mean, model
         if not valid:
             break
         if n_frame == first_frame:
-            foreground = np.zeros((image.shape[0], image.shape[1], 2141 - first_frame))
+            foreground = np.zeros((2141 - first_frame, image.shape[0], image.shape[1]))
         if n_frame > first_frame:
             image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-            foreground[:, :, n_frame-first_frame-1] = morphological_filtering(get_frame_mask_single_gaussian_model
-                                                                              (image, model_mean, model_std, alpha))
-            window_candidates = candidate_generation_window_ccl(foreground[:, :, n_frame-first_frame-1])
-            visualize_boxes(image, window_candidates)
+            foreground[n_frame-first_frame-1, :, :] = get_frame_mask_single_gaussian_model(image, model_mean, model_std, alpha)
 
             if adaptive:
                 model_mean = rho*image + (1-rho)*model_mean
@@ -66,7 +65,7 @@ def get_fg_mask_single_gaussian_model(video_path, first_frame, model_mean, model
     return foreground
 
 
-def single_gaussian_model(video_path, alpha, rho, adaptive=False):
+def single_gaussian_model(video_path, alpha, rho, adaptive=False, export_frames=False):
     print('Computing Gaussian model...')
     mean, std = get_pixels_single_gaussian_model(video_path)
     print('Gaussian computed for pixels')
@@ -74,6 +73,14 @@ def single_gaussian_model(video_path, alpha, rho, adaptive=False):
     bg = get_fg_mask_single_gaussian_model(video_path, first_frame=int(2141 * 0.25), model_mean=mean, model_std=std,
                                             alpha=alpha, rho=rho, adaptive=adaptive)
     print('Extracted background with shape {}'.format(bg.shape))
+
+    if export_frames:
+        i = int(2141 * 0.25)
+        for frame in bg:
+            new_image = frame.astype(np.uint8)
+            new_image = cv2.resize(new_image, (0, 0), fx=0.3, fy=0.3)
+            cv2.imwrite('output_frames/single_gaussian/{:04d}.png'.format(i), new_image.astype('uint8') * 255)
+            i += 1
 
 
 ############################################
