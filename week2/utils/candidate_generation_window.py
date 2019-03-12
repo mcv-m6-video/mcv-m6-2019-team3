@@ -2,8 +2,10 @@ from skimage.measure import label, regionprops
 from matplotlib import pyplot as plt
 import matplotlib.patches as mpatches
 
+from week2.utils.detection import Detection
 
-def candidate_generation_window_ccl(mask):
+
+def candidate_generation_window_ccl(n_frame, mask):
     label_image = label(mask)
     regions = regionprops(label_image)
 
@@ -11,7 +13,8 @@ def candidate_generation_window_ccl(mask):
     for region in regions:
         bbox = list(region.bbox)
         box_h, box_w = bbox[2] - bbox[0], bbox[3] - bbox[1]
-        window_candidates.append(bbox)
+        det = Detection(frame=n_frame, label='car', xtl=bbox[0], ytl=bbox[1], width=box_w, height=box_h, confidence=1)
+        window_candidates.append(det)
 
     return window_candidates
 
