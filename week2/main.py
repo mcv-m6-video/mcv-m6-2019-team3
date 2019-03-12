@@ -15,16 +15,14 @@ groundtruth_path = "../datasets/AICity_data/train/S03/c010/gt/gt.txt"
 ALPHAS = [0, 0.5, 1., 1.5, 2., 2.5, 3., 3.5, 4. ]
 RHOS = [0.25, 0.5, 0.75, 1.]
 
-
 def hyperparameter_search(groundtruth_list):
-
 
     F1_alpha = []
     F1_rho = []
 
     for alpha in ALPHAS:
         detections = single_gaussian_model(video_path, alpha=alpha, rho=1, adaptive=False, export_frames=export_frames)
-        print('Compute mAP0.5 for alpha')
+        print('Compute mAP0.5 for alpha: {}'.format(alpha))
         precision, recall, max_precision_per_step, F1, mAP = compute_mAP(groundtruth_list, detections)
         F1_alpha.append([mAP, alpha])
     best_alpha_case = np.amax(F1_alpha, axis=0)
@@ -44,7 +42,7 @@ def hyperparameter_search(groundtruth_list):
     for rho in RHOS:
         detections = single_gaussian_model(video_path, alpha=best_alpha, rho=rho, adaptive=True,
                                            export_frames=export_frames)
-        print('Compute mAP0.5 for alpha')
+        print('Compute mAP0.5 for rho: {}'.format(rho))
         precision, recall, max_precision_per_step, F1,mAP = compute_mAP(groundtruth_list, detections)
         F1_rho.append([mAP, rho])
     best_rho_case = np.amax(F1_rho, axis=0)
@@ -78,7 +76,7 @@ def grid_search():
 
 if __name__ == "__main__":
     export_frames = False
-    best_pairs = False
+    best_pairs = True
 
     # Evaluate against groundtruth
     print("Getting groundtruth")
