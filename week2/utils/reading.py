@@ -68,8 +68,8 @@ def read_annotations(annotation_path, video_path):
                 ytl = int(float(box.attrib['ytl']))
                 xbr = int(float(box.attrib['xbr']))
                 ybr = int(float(box.attrib['ybr']))
-                #ground_truths.append(Detection(frame, label, xtl, ytl, xbr - xtl + 1, ybr - ytl + 1, 1))
-                ground_truths.append(Detection(frame, label, xtl, ytl, xbr, ybr, 1))
+                ground_truths.append(Detection(frame, label, xtl, ytl, xbr - xtl + 1, ybr - ytl + 1, 1))
+                #ground_truths.append(Detection(frame, label, xtl, ytl, xbr, ybr, 1))
 
         pbar.update(1)
         num += 1

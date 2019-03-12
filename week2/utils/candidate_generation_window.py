@@ -25,8 +25,8 @@ def visualize_boxes(pixel_candidates, window_candidates):
     fig, ax = plt.subplots(figsize=(10, 6))
     ax.imshow(pixel_candidates)
     for candidate in window_candidates:
-        minr, minc, maxr, maxc = candidate
-        rect = mpatches.Rectangle((minc, minr), maxc - minc, maxr - minr, fill=False, edgecolor='red', linewidth=2)
+        minc, minr, width, height = candidate
+        rect = mpatches.Rectangle((minc, minr), width, height, fill=False, edgecolor='red', linewidth=2)
         ax.add_patch(rect)
 
     plt.show()
