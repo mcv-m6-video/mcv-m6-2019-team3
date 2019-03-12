@@ -56,6 +56,13 @@ def read_annotations(annotation_path, video_path):
             label = track.attrib['label']
             box = track.find("box[@frame='{0}']".format(str(num)))
             if box is not None and label == 'car':
+
+                if box.attrib['occluded'] == '1':
+                    continue
+
+                if box[0].text == 'true':      # Check parked
+                    continue
+
                 frame = int(box.attrib['frame'])
                 xtl = int(float(box.attrib['xtl']))
                 ytl = int(float(box.attrib['ytl']))
