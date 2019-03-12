@@ -10,7 +10,7 @@ from utils.candidate_generation_window import visualize_boxes, candidate_generat
 
 #from week1.utils.reading import read_annotations_file
 
-def get_pixels_single_gaussian_model(video_path, last_frame=int(2141*0.25)):
+def get_pixels_single_gaussian_model(video_path, last_frame=int(2141*0.25), only_h=False):
     capture = cv2.VideoCapture(video_path)
     n_frame = 0
 
@@ -23,8 +23,11 @@ def get_pixels_single_gaussian_model(video_path, last_frame=int(2141*0.25)):
 
         if n_frame==0:
             gaussians = np.zeros((last_frame+1, image.shape[0], image.shape[1]))
-
-        image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+        if only_h:
+            image = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
+            image = image[:,:,0]
+        else:
+            image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
 
         gaussians[n_frame, :, :] = image
 
@@ -50,7 +53,7 @@ def get_frame_mask_single_gaussian_model(img, model_mean, model_std, alpha):
     return abs(img - model_mean) >= alpha*(model_std+2)     # Foreground
 
 
-def get_fg_mask_single_gaussian_model(video_path, first_frame, model_mean, model_std, alpha, rho, adaptive=False):
+def get_fg_mask_single_gaussian_model(video_path, first_frame, model_mean, model_std, alpha, rho, adaptive=False, only_h=False):
     capture = cv2.VideoCapture(video_path)
     n_frame = 0
     detections = []
@@ -63,7 +66,11 @@ def get_fg_mask_single_gaussian_model(video_path, first_frame, model_mean, model
         if n_frame == first_frame:
             foreground = np.zeros((2141 - first_frame, image.shape[0], image.shape[1]))
         if n_frame > first_frame:
-            image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+            if only_h:
+                image = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
+                image = image[:,:,0]
+            else:
+                image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
             foreground[n_frame-first_frame-1, :, :] = morphological_filtering(get_frame_mask_single_gaussian_model
                                                                               (image, model_mean, model_std, alpha))
             window_candidates = candidate_generation_window_ccl(n_frame, foreground[n_frame-first_frame-1, :, :])
@@ -82,21 +89,25 @@ def get_fg_mask_single_gaussian_model(video_path, first_frame, model_mean, model
     return foreground, detections
 
 
-def single_gaussian_model(video_path, alpha, rho, adaptive=False, export_frames=False):
+def single_gaussian_model(video_path, alpha, rho, adaptive=False, export_frames=False, only_h=False):
 
     print('Computing Gaussian model...')
-    if os.path.exists('mean_std.pkl'):
-        with open('mean_std.pkl', 'rb') as p:
+    if only_h:
+        filename_mstd = 'mean_std_h.pkl'
+    else:
+        filename_mstd = 'mean_std.pkl'
+    if os.path.exists(filename_mstd):
+        with open(filename_mstd, 'rb') as p:
             mean, std = pickle.load(p)
     else:
         mean, std = get_pixels_single_gaussian_model(video_path)
-        with open('mean_std.pkl', 'wb') as f:
+        with open(filename_mstd, 'wb') as f:
             pickle.dump([mean, std], f)
 
     print('Gaussian computed for pixels')
     print('\nExtracting Background...')
     bg, detections = get_fg_mask_single_gaussian_model(video_path, first_frame=int(2141 * 0.25), model_mean=mean, model_std=std,
-                                            alpha=alpha, rho=rho, adaptive=adaptive)
+                                            alpha=alpha, rho=rho, adaptive=adaptive, only_h=only_h)
     print('Extracted background with shape {}'.format(bg.shape))
 
     if export_frames:
@@ -106,9 +117,12 @@ def single_gaussian_model(video_path, alpha, rho, adaptive=False, export_frames=
             new_image = cv2.resize(new_image, (0, 0), fx=0.3, fy=0.3)
             cv2.imwrite('output_frames/single_gaussian/frame_{:04d}.png'.format(i), new_image.astype('uint8') * 255)
             i += 1
-
-    with open('detections.pkl', 'wb') as f:
-        pickle.dump(detections, f)
+    if only_h:
+        with open('detections_h.pkl', 'wb') as f:
+            pickle.dump(detections, f)
+    else:
+        with open('detections.pkl', 'wb') as f:
+            pickle.dump(detections, f)
 
     return detections
 

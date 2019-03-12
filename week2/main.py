@@ -14,6 +14,8 @@ groundtruth_xml_path = "../annotations/m6-full_annotation.xml"
 groundtruth_path = "../datasets/AICity_data/train/S03/c010/gt/gt.txt"
 ALPHAS = [0, 0.5, 1., 1.5, 2., 2.5, 3., 3.5, 4. ]
 RHOS = [0.25, 0.5, 0.75, 1.]
+# colorspace can be: RGB, YUV, None, HSV
+colorspace = None
 
 def hyperparameter_search(groundtruth_list):
 
@@ -76,22 +78,26 @@ def grid_search():
 
 if __name__ == "__main__":
     export_frames = False
-    best_pairs = True
+    best_pairs = False
 
-    # Evaluate against groundtruth
+    #Evaluate against groundtruth
     print("Getting groundtruth")
-    groundtruth_list = read_annotations_file(groundtruth_path, video_path)  # gt.txt
-    # print(groundtruth_list)
-
+    groundtruth_list = read_annotations_file(groundtruth_path, video_path)          # gt.txt
+    detections = []
     if best_pairs:
-
         hyperparameter_search(groundtruth_list)
-
     else:
-        # Gaussian modelling
-        if os.path.exists('detections.pkl'):
-            with open('detections.pkl', 'rb') as p:
-                detections = pickle.load(p)
+        if colorspace is not None:
+            if colorspace.lower()=="rgb":
+                print("rgb")
+            elif colorspace.lower()=="hsv":
+                print("hsv")
+                if os.path.exists('detections_h.pkl'):
+                    with open('detections_h.pkl', 'rb') as p:
+                        detections = pickle.load(p)
+                else:
+                    # This function lasts about 10 minutes
+                    detections = single_gaussian_model(video_path, alpha=1.25, rho=1, adaptive=True, export_frames=export_frames, only_h=True)
         else:
             # This function lasts about 10 minutes
             detections = single_gaussian_model(video_path, alpha=2.5, rho=1, adaptive=True, export_frames=export_frames)
