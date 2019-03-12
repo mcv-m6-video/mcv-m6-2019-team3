@@ -23,6 +23,7 @@ if __name__ == "__main__":
     #Evaluate against groundtruth
     print("Getting groundtruth")
     groundtruth_list = read_annotations_file(groundtruth_path)          # gt.txt
+
     print('Compute mAP0.5')
     compute_mAP(groundtruth_list, detections)
 
