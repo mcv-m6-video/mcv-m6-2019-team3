@@ -14,7 +14,7 @@ def get_pixels_single_gaussian_model(video_path, last_frame=int(2141*0.25)):
     capture = cv2.VideoCapture(video_path)
     n_frame = 0
 
-    pbar = tqdm(total=last_frame)
+    pbar = tqdm(total=last_frame+1)
 
     while capture.isOpened() and n_frame <= last_frame:
         valid, image = capture.read()
@@ -54,7 +54,7 @@ def get_fg_mask_single_gaussian_model(video_path, first_frame, model_mean, model
     capture = cv2.VideoCapture(video_path)
     n_frame = 0
     detections = []
-    pbar = tqdm(total=2141 - first_frame)
+    pbar = tqdm(total=2141)
 
     while capture.isOpened():
         valid, image = capture.read()
@@ -94,7 +94,7 @@ def single_gaussian_model(video_path, alpha, rho, adaptive=False, export_frames=
             pickle.dump([mean, std], f)
 
     print('Gaussian computed for pixels')
-    print('Extracting Background...')
+    print('\nExtracting Background...')
     bg, detections = get_fg_mask_single_gaussian_model(video_path, first_frame=int(2141 * 0.25), model_mean=mean, model_std=std,
                                             alpha=alpha, rho=rho, adaptive=adaptive)
     print('Extracted background with shape {}'.format(bg.shape))
@@ -104,8 +104,11 @@ def single_gaussian_model(video_path, alpha, rho, adaptive=False, export_frames=
         for frame in bg:
             new_image = frame.astype(np.uint8)
             new_image = cv2.resize(new_image, (0, 0), fx=0.3, fy=0.3)
-            cv2.imwrite('output_frames/single_gaussian/{:04d}.png'.format(i), new_image.astype('uint8') * 255)
+            cv2.imwrite('output_frames/single_gaussian/frame_{:04d}.png'.format(i), new_image.astype('uint8') * 255)
             i += 1
+
+    with open('detections.pkl', 'wb') as f:
+        pickle.dump(detections, f)
 
     return detections
 

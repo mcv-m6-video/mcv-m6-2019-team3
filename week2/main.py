@@ -1,6 +1,9 @@
-from week2.processing.background_subtraction import BackgroundSubtractor, single_gaussian_model
-from week2.utils.reading import read_annotations_file
-from week2.evaluation.evaluation_funcs import compute_mAP
+import os
+import pickle
+
+from processing.background_subtraction import BackgroundSubtractor, single_gaussian_model
+from utils.reading import read_annotations_file
+from evaluation.evaluation_funcs import compute_mAP
 
 video_path = "../datasets/AICity_data/train/S03/c010/vdo.avi"
 groundtruth_xml_path = "../annotations/m6-full_annotation.xml"
@@ -10,7 +13,12 @@ if __name__ == "__main__":
     export_frames = False
 
     # Gaussian modelling
-    detections = single_gaussian_model(video_path, alpha=2.5, rho=1, adaptive=True, export_frames=export_frames)
+    if os.path.exists('mean_std.pkl'):
+        with open('mean_std.pkl', 'rb') as p:
+            detections = pickle.load(p)
+    else:
+        # This function lasts about 10 minutes
+        detections = single_gaussian_model(video_path, alpha=2.5, rho=1, adaptive=True, export_frames=export_frames)
 
     #Evaluate against groundtruth
     print("Getting groundtruth")
