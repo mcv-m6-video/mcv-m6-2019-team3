@@ -53,7 +53,7 @@ def get_frame_mask_single_gaussian_model(img, model_mean, model_std, alpha):
     return abs(img - model_mean) >= alpha*(model_std+2)     # Foreground
 
 
-def get_fg_mask_single_gaussian_model(video_path, first_frame, model_mean, model_std, alpha, rho, adaptive=False, only_h=False):
+def get_fg_mask_single_gaussian_model(video_path, first_frame, model_mean, model_std, alpha, rho, adaptive=False, only_h=False, min_size=0, max_size=1000, min_ratio=3, max_ratio=0.3):
     capture = cv2.VideoCapture(video_path)
     n_frame = 0
     detections = []
@@ -73,7 +73,7 @@ def get_fg_mask_single_gaussian_model(video_path, first_frame, model_mean, model
                 image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
             foreground[n_frame-first_frame-1, :, :] = morphological_filtering(get_frame_mask_single_gaussian_model
                                                                               (image, model_mean, model_std, alpha))
-            window_candidates = candidate_generation_window_ccl(n_frame, foreground[n_frame-first_frame-1, :, :])
+            window_candidates = candidate_generation_window_ccl(n_frame, foreground[n_frame-first_frame-1, :, :], min_size, max_size, min_ratio, max_ratio)
             detections.extend(window_candidates)
             #visualize_boxes(image, window_candidates)
 
