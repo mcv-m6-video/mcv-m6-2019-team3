@@ -1,6 +1,8 @@
 import cv2
 import xml.etree.ElementTree as ET
 
+from tqdm import tqdm
+
 from week2.utils.detection import Detection
 
 
@@ -25,18 +27,21 @@ def read_detections(path: str):
     return frame_detections
 
 
-def read_annotations(annotation_path):
+def read_annotations(annotation_path, video_path):
     """
     Arguments: 
     capture: frames from video, opened as cv2.VideoCapture
     root: parsed xml annotations as ET.parse(annotation_path).getroot()
     """
-    capture = cv2.VideoCapture("./datasets/AICity_data/train/S03/c010/vdo.avi")
+    capture = cv2.VideoCapture(video_path)
     root = ET.parse(annotation_path).getroot()
 
     ground_truths = []
     images = []
     num = 0
+
+    pbar = tqdm(total=2140)
+
     while capture.isOpened():
         valid, image = capture.read()
         if not valid:
@@ -59,7 +64,10 @@ def read_annotations(annotation_path):
                 #ground_truths.append(Detection(frame, label, xtl, ytl, xbr - xtl + 1, ybr - ytl + 1, 1))
                 ground_truths.append(Detection(frame, label, xtl, ytl, xbr, ybr, 1))
 
+        pbar.update(1)
         num += 1
+
+    pbar.close()
 
     # print(ground_truths)
     capture.release()
@@ -81,11 +89,11 @@ def read_annotations_from_txt(gt_path):
 
     return ground_truths_list
 
-def read_annotations_file(gt_path):
+def read_annotations_file(gt_path, video_path):
     if (gt_path.endswith('.txt')):
         annotations_list = read_annotations_from_txt(gt_path)
     elif (gt_path.endswith('.xml')):
-        annotations_list = read_annotations(gt_path)
+        annotations_list = read_annotations(gt_path, video_path)
     else:
         raise Exception('Incompatible filetype')
 
