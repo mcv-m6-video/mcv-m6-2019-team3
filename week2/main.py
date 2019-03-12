@@ -1,14 +1,9 @@
-import numpy as np
+from processing.background_subtraction import BackgroundSubtractor
 
 video_path = "../datasets/AICity_data/train/S03/c010/vdo.avi"
-groundtruth_path = "../datasets/AICity_data/train/S03/c010/gt/gt.txt"
-detections_path = "../datasets/AICity_data/train/S03/c010/det/"
-detectors = ["det_ssd512.txt", "det_mask_rcnn.txt", "det_yolo3.txt"]
-
-annotated_groundtruth = "./annotations/Anotation_740-1090_AICITY_S03_C010.xml"
+groundtruth_xml_path = "../annotations/m6-full_annotation.xml"
 
 if __name__ == "__main__":
 
-    # Read video
-    print("Loading video")
-    
+    # State-of-the-art background subtractors
+    BackgroundSubtractor(video_path, export_frames=True)

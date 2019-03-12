@@ -1,11 +1,12 @@
 *.avi
 *.zip
 *.ipynb
-week 1/plots/
-week 1/frames_out/
-week 1/frames/
+week1/plots/
+week1/frames_out/
+week1/frames/
 datasets/AICity_data/train/S03/c010/vdo.avi
 *.idea
+week2/output_frames/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
