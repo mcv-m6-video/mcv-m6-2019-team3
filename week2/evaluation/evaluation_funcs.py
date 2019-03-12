@@ -162,7 +162,7 @@ def compute_mAP(groundtruth_list_original, detections_list, IoU_threshold=0.5):
     #print(max_precision_per_step)
     mAP = sum(max_precision_per_step)/11
     print("mAP: {}\n".format(mAP))
-    return precision, recall, max_precision_per_step, F1_score
+    return precision, recall, max_precision_per_step, F1_score, mAP
 
 
 def plot_precision_recall_curve(precision, recall, max_precision_per_step, title="plot", title2=""):
