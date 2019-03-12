@@ -26,7 +26,7 @@ if __name__ == "__main__":
     groundtruth_list = read_annotations_file(groundtruth_xml_path, video_path)          # gt.txt
     #print(groundtruth_list)
 
-    plot_bboxes(video_path, groundtruth_list, detections)
+    #plot_bboxes(video_path, groundtruth_list, detections)
 
     print('Compute mAP0.5')
     compute_mAP(groundtruth_list, detections)

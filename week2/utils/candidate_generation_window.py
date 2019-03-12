@@ -13,9 +13,9 @@ def candidate_generation_window_ccl(n_frame, mask):
 
     window_candidates = []
     for region in regions:
-        bbox = list(region.bbox)
+        bbox = region.bbox
         box_h, box_w = bbox[2] - bbox[0], bbox[3] - bbox[1]
-        det = Detection(frame=n_frame, label='car', xtl=bbox[0], ytl=bbox[1], width=box_w, height=box_h, confidence=1)
+        det = Detection(frame=n_frame, label='car', xtl=bbox[1], ytl=bbox[0], width=box_w, height=box_h, confidence=1)
         window_candidates.append(det)
 
     return window_candidates
