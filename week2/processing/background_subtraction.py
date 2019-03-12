@@ -37,9 +37,7 @@ def get_pixels_single_gaussian_model(video_path, last_frame=int(2141*0.25)):
 
 
 def get_frame_mask_single_gaussian_model(img, model_mean, model_std, alpha):
-    foreground = (abs(img - model_mean) >= alpha*(model_std+2))
-
-    return foreground
+    return abs(img - model_mean) >= alpha*(model_std+2)     # Foreground
 
 
 def get_fg_mask_single_gaussian_model(video_path, first_frame, model_mean, model_std, alpha, rho, adaptive=False):
@@ -55,7 +53,7 @@ def get_fg_mask_single_gaussian_model(video_path, first_frame, model_mean, model
             foreground = np.zeros((2141 - first_frame, image.shape[0], image.shape[1]))
         if n_frame > first_frame:
             image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-            foreground[ n_frame-first_frame-1, :, :] = morphological_filtering(get_frame_mask_single_gaussian_model
+            foreground[n_frame-first_frame-1, :, :] = morphological_filtering(get_frame_mask_single_gaussian_model
                                                                               (image, model_mean, model_std, alpha))
             window_candidates = candidate_generation_window_ccl(n_frame, foreground[:, :, n_frame-first_frame-1])
             detections.extend(window_candidates)

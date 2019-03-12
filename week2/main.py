@@ -7,9 +7,10 @@ groundtruth_xml_path = "../annotations/m6-full_annotation.xml"
 groundtruth_path = "../datasets/AICity_data/train/S03/c010/gt/gt.txt"
 
 if __name__ == "__main__":
+    export_frames = False
 
     # Gaussian modelling
-    detections = single_gaussian_model(video_path, alpha=2.5, rho=1, adaptive=True, export_frames=True)
+    detections = single_gaussian_model(video_path, alpha=2.5, rho=1, adaptive=True, export_frames=export_frames)
 
     #Evaluate against groundtruth
     print("Getting groundtruth")
@@ -19,4 +20,4 @@ if __name__ == "__main__":
 
 
     # State-of-the-art background subtractors
-    #BackgroundSubtractor(video_path, export_frames=False)
+    #BackgroundSubtractor(video_path, export_frames=export_frames)
