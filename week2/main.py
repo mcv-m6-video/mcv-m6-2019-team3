@@ -82,7 +82,7 @@ if __name__ == "__main__":
 
     # Evaluate against groundtruth
     print("Getting groundtruth")
-    groundtruth_list = read_annotations_file(groundtruth_xml_path, video_path)  # gt.txt
+    groundtruth_list = read_annotations_file(groundtruth_path, video_path)  # gt.txt
     # print(groundtruth_list)
 
     if best_pairs:
@@ -90,7 +90,6 @@ if __name__ == "__main__":
         hyperparameter_search(groundtruth_list)
 
     else:
-
         # Gaussian modelling
         if os.path.exists('detections.pkl'):
             with open('detections.pkl', 'rb') as p:
@@ -101,15 +100,9 @@ if __name__ == "__main__":
 
         plot_bboxes(video_path, groundtruth_list, detections)
 
-<<<<<<< Updated upstream
     print('Compute mAP0.5')
     gt_filtered = [x for x in groundtruth_list if x.frame > int(2141*0.25)]         # filter 25% of gt
     compute_mAP(gt_filtered, detections)
-=======
-        print('Compute mAP0.5')
-        compute_mAP(groundtruth_list, detections)
->>>>>>> Stashed changes
-
 
     # State-of-the-art background subtractors
     #BackgroundSubtractor(video_path, export_frames=export_frames)
