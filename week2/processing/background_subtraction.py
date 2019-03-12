@@ -43,6 +43,7 @@ def get_frame_mask_single_gaussian_model(img, model_mean, model_std, alpha):
 def get_fg_mask_single_gaussian_model(video_path, first_frame, model_mean, model_std, alpha, rho, adaptive=False):
     capture = cv2.VideoCapture(video_path)
     n_frame = 0
+    detections = []
 
     while capture.isOpened():
         valid, image = capture.read()
@@ -54,8 +55,9 @@ def get_fg_mask_single_gaussian_model(video_path, first_frame, model_mean, model
             image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
             foreground[:, :, n_frame-first_frame-1] = morphological_filtering(get_frame_mask_single_gaussian_model
                                                                               (image, model_mean, model_std, alpha))
-            window_candidates = candidate_generation_window_ccl(foreground[:, :, n_frame-first_frame-1])
-            visualize_boxes(image, window_candidates)
+            window_candidates = candidate_generation_window_ccl(n_frame, foreground[:, :, n_frame-first_frame-1])
+            detections.extend(window_candidates)
+            #visualize_boxes(image, window_candidates)
 
             if adaptive:
                 model_mean = rho*image + (1-rho)*model_mean
@@ -63,7 +65,7 @@ def get_fg_mask_single_gaussian_model(video_path, first_frame, model_mean, model
 
         n_frame +=1
 
-    return foreground
+    return foreground, detections
 
 
 def single_gaussian_model(video_path, alpha, rho, adaptive=False):
@@ -71,10 +73,11 @@ def single_gaussian_model(video_path, alpha, rho, adaptive=False):
     mean, std = get_pixels_single_gaussian_model(video_path)
     print('Gaussian computed for pixels')
     print('Extracting Background...')
-    bg = get_fg_mask_single_gaussian_model(video_path, first_frame=int(2141 * 0.25), model_mean=mean, model_std=std,
+    bg, detections = get_fg_mask_single_gaussian_model(video_path, first_frame=int(2141 * 0.25), model_mean=mean, model_std=std,
                                             alpha=alpha, rho=rho, adaptive=adaptive)
     print('Extracted background with shape {}'.format(bg.shape))
 
+    return detections
 
 ############################################
 ########### State-of-the-art methods
