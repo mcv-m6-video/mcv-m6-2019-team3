@@ -13,14 +13,12 @@ if __name__ == "__main__":
     export_frames = False
 
     # Gaussian modelling
-    #if os.path.exists('detections.pkl'):
-    #    with open('detections.pkl', 'rb') as p:
-    #        detections = pickle.load(p)
-    #else:
+    if os.path.exists('detections.pkl'):
+        with open('detections.pkl', 'rb') as p:
+            detections = pickle.load(p)
+    else:
         # This function lasts about 10 minutes
-        #detections = single_gaussian_model(video_path, alpha=2.5, rho=1, adaptive=True, export_frames=export_frames)
-
-    detections = single_gaussian_model(video_path, alpha=2.5, rho=1, adaptive=True, export_frames=export_frames)
+        detections = single_gaussian_model(video_path, alpha=2.5, rho=1, adaptive=True, export_frames=export_frames)
 
     #Evaluate against groundtruth
     print("Getting groundtruth")
