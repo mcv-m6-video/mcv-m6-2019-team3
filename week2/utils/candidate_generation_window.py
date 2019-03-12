@@ -4,7 +4,7 @@ from skimage.measure import label, regionprops
 from matplotlib import pyplot as plt
 import matplotlib.patches as mpatches
 
-from week2.utils.detection import Detection
+from utils.detection import Detection
 
 
 def candidate_generation_window_ccl(n_frame, mask):

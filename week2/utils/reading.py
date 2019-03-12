@@ -3,7 +3,7 @@ import xml.etree.ElementTree as ET
 
 from tqdm import tqdm
 
-from week2.utils.detection import Detection
+from utils.detection import Detection
 
 
 def read_detections(path: str):

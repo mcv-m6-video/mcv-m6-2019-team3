@@ -6,7 +6,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from collections import defaultdict
 
-from week1.evaluation.bbox_iou import bbox_iou
+from evaluation.bbox_iou import bbox_iou
 
 
 def compute_IoU(video_path, groundtruth_list, detections_list):
@@ -149,13 +149,20 @@ def compute_mAP(groundtruth_list_original, detections_list, IoU_threshold=0.5):
         #    TP += 1
 
     print("TP={} FN={} FP={}".format(TP, FN, FP))
+    recall = 0
+    precision = 0
+    F1_score = 0
+    if TP > 0:
+        recall = float(TP) / float(TP + FP)
+        precision = float(TP) / float(TP + FN)
+        F1_score = 2 * recall * precision / (recall + precision)
     #print(TP+FP)
     #print("precision:{}".format(precision))
     #print("recall:{}".format(recall))
     #print(max_precision_per_step)
     mAP = sum(max_precision_per_step)/11
     print("mAP: {}\n".format(mAP))
-    return precision, recall, max_precision_per_step
+    return precision, recall, max_precision_per_step, F1_score
 
 
 def plot_precision_recall_curve(precision, recall, max_precision_per_step, title="plot", title2=""):
