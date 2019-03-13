@@ -58,7 +58,7 @@ def plot_bboxes(video_path, groundtruth, detections):
         if not valid:
             break
 
-        if n_frame > 600:
+        if n_frame > 600 and n_frame < 700:
             # Get groundtruth of the target frame
             gt_on_frame = [x for x in groundtruth if x.frame == n_frame]
             gt_bboxes = [o.bbox for o in gt_on_frame]
