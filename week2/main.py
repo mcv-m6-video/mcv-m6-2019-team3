@@ -15,11 +15,10 @@ groundtruth_path = "../datasets/AICity_data/train/S03/c010/gt/gt.txt"
 
 # colorspace can be: None, HSV
 colorspace = None
+ALPHAS = [0, 0.5, 1., 1.5, 2., 2.5, 3., 3.5, 4.]
+RHOS = [0.25, 0.5, 0.75, 1.]
 
 def hyperparameter_search(groundtruth_list):
-
-    ALPHAS = [0, 0.5, 1., 1.5, 2., 2.5, 3., 3.5, 4.]
-    RHOS = [0.25, 0.5, 0.75, 1.]
 
     F1_alpha = []
     F1_rho = []
