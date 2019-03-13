@@ -10,8 +10,8 @@ python main.py
 We set some flags to change the behaviour of the program:
 ```
 colorspace = None               # [None, 'HSV']
-adaptive = False                # Use adaptive or non-adaptive algorithm
-use_detections_pkl = False      # Load .pkl instead of compute the intermediate results
+adaptive = True                # Use adaptive or non-adaptive algorithm
+use_detections_pkl = True      # Load .pkl instead of compute the intermediate results
 export_frames = False           # Save .png images to disk
 
 # Find best alpha and rho
