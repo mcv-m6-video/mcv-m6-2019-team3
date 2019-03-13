@@ -7,6 +7,7 @@ from processing.background_subtraction import BackgroundSubtractor, single_gauss
 from utils.reading import read_annotations_file
 from evaluation.evaluation_funcs import compute_mAP
 from utils.candidate_generation_window import plot_bboxes
+from mpl_toolkits.mplot3d import Axes3D
 
 
 video_path = "../datasets/AICity_data/train/S03/c010/vdo.avi"
@@ -16,8 +17,9 @@ roi_path = '../datasets/AICity_data/train/S03/c010/roi.jpg'
 
 # colorspace can be: None, HSV
 colorspace = None
-ALPHAS = [0, 0.5, 1., 1.5, 2., 2.5, 3., 3.5, 4.]
-RHOS = [0.25, 0.5, 0.75, 1.]
+
+ALPHAS = [2.3, 2.5, 2.7]
+RHOS = [0.8, 0.9, 1.0]
 
 def hyperparameter_search(groundtruth_list):
 
@@ -67,10 +69,37 @@ def hyperparameter_search(groundtruth_list):
 def grid_search():
     parameters = {'alpha': ALPHAS, 'rho': RHOS}
     gs = grid_search.GridSearch()
+    # State-of-the-art background subtractors
+    # BackgroundSubtractor(video_path, export_frames=export_frames)
 
-    print('best_metric: ' + str(gs.best_score))
-    print('best_params: ' + str(gs.best_params))
-    scores = np.array(gs.results).reshape(len(parameters['alpha']), len(parameters['rho']))
+def gridsearch():
+    mAP_total = []
+
+    for i,alpha in enumerate(ALPHAS):
+        for j,rho in enumerate(RHOS):
+            detections = single_gaussian_model(video_path, alpha=alpha, rho=1, adaptive=True,
+                                               export_frames=export_frames)
+            print('Compute mAP0.5 for alpha {} and rho {}'.format(alpha, rho))
+            precision, recall, max_precision_per_step, F1, mAP = compute_mAP(groundtruth_list, detections)
+            mAP_total.append([mAP, alpha, rho])
+
+    best_case = np.amax(mAP_total, axis=0)
+
+    print("Best mAP: {} with alpha: {} and rho {}".format(best_case[0], best_case[1], best_case[2]))
+
+    # Plot grid search
+    X, Y = np.meshgrid(RHOS,ALPHAS)
+    Z = np.array(mAP_total)[:,0]
+
+    fig = plt.figure()
+    ax = fig.add_subplot(111, projection='3d')
+    ax.plot_surface(X, Y, Z, cmap='plasma')
+    axis = ["Ro", "Alpha", "mAP"]
+    ax.set_xlabel(axis[0])
+    ax.set_ylabel(axis[1])
+    ax.set_zlabel(axis[2])
+    plt.savefig('grid_search.png',dpi=300)
+    plt.show()
 
 if __name__ == "__main__":
 
