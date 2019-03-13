@@ -138,7 +138,7 @@ def BackgroundSubtractor(video_path, export_frames=False):
     if not os.path.exists('output_frames/MOG/'):
         os.mkdir('output_frames/MOG/')
 
-    fgbg_MOG2 = cv2.createBackgroundSubtractorMOG2()
+    fgbg_MOG2 = cv2.createBackgroundSubtractorMOG2(detectShadows=False)
     if not os.path.exists('output_frames/MOG2/'):
         os.mkdir('output_frames/MOG2/')
 
@@ -158,21 +158,23 @@ def BackgroundSubtractor(video_path, export_frames=False):
         valid, frame = capture.read()
         if not valid:
             break
-        images.append(frame)
+        #images.append(frame)
 
-        # Algorithms
+        ### Algorithms
+        # MOG
         maskMOG = BackgroundSubtractorMOG(fgbg_MOG, frame, i, export_frames)
-        maskMOG2 = BackgroundSubtractorMOG2(fgbg_MOG2, frame, i, export_frames)
-        maskGMG = BackgroundSubtractorGMG(fgbg_GMG, frame, i, export_frames)
-
         maskMOG = morphological_filtering(maskMOG)
         window_candidatesMOG = candidate_generation_window_ccl(i, maskMOG)
         detectionsMOG.extend(window_candidatesMOG)
 
+        # MOG2
+        maskMOG2 = BackgroundSubtractorMOG2(fgbg_MOG2, frame, i, export_frames)
         maskMOG2 = morphological_filtering(maskMOG2)
         window_candidatesMOG2 = candidate_generation_window_ccl(i, maskMOG2)
         detectionsMOG2.extend(window_candidatesMOG2)
 
+        # GMG
+        maskGMG = BackgroundSubtractorGMG(fgbg_GMG, frame, i, export_frames)
         maskGMG = morphological_filtering(maskGMG)
         window_candidatesGMG = candidate_generation_window_ccl(i, maskGMG)
         detectionsGMG.extend(window_candidatesGMG)
@@ -184,20 +186,23 @@ def BackgroundSubtractor(video_path, export_frames=False):
     capture.release()
     cv2.destroyAllWindows()
 
+    with open('detections_MOG_MOG2_GMG.pkl', 'wb') as f:
+        pickle.dump([detectionsMOG, detectionsMOG2, detectionsGMG], f)
+
     return detectionsMOG, detectionsMOG2, detectionsGMG
 
 
 def BackgroundSubtractorMOG(fgbg_MOG, frame, i, export_frames=False):
     fgmask = fgbg_MOG.apply(frame)
-    fgmask = cv2.resize(fgmask, (0, 0), fx=0.3, fy=0.3)
     if export_frames:
+        fgmask = cv2.resize(fgmask, (0, 0), fx=0.3, fy=0.3)
         cv2.imwrite('output_frames/MOG/frame_{:04d}.jpg'.format(i), fgmask)
     return fgmask
 
 def BackgroundSubtractorMOG2(fgbg_MOG2, frame, i, export_frames=False):
     fgmask = fgbg_MOG2.apply(frame)
-    fgmask = cv2.resize(fgmask, (0, 0), fx=0.3, fy=0.3)
     if export_frames:
+        fgmask = cv2.resize(fgmask, (0, 0), fx=0.3, fy=0.3)
         cv2.imwrite('output_frames/MOG2/frame_{:04d}.jpg'.format(i), fgmask)
     return fgmask
 
@@ -206,7 +211,7 @@ def BackgroundSubtractorGMG(fgbg_GMG, frame, i, export_frames=False):
 
     fgmask = fgbg_GMG.apply(frame)
     fgmask = cv2.morphologyEx(fgmask, cv2.MORPH_OPEN, kernel)
-    fgmask = cv2.resize(fgmask, (0, 0), fx=0.3, fy=0.3)
     if export_frames:
+        fgmask = cv2.resize(fgmask, (0, 0), fx=0.3, fy=0.3)
         cv2.imwrite('output_frames/GMG/frame_{:04d}.jpg'.format(i), fgmask)
     return fgmask
