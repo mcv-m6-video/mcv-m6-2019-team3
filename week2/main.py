@@ -72,46 +72,47 @@ def grid_search():
     print('best_params: ' + str(gs.best_params))
     scores = np.array(gs.results).reshape(len(parameters['alpha']), len(parameters['rho']))
 
-
-
-
 if __name__ == "__main__":
+
     export_frames = False
     best_pairs = False
-    adaptive = True
+    adaptive = False
     use_detections_pkl = False
+    detections = []
 
-
-    #Evaluate against groundtruth
+    # Read groundtruth
     print("Getting groundtruth")
     groundtruth_list = read_annotations_file(groundtruth_path, video_path)          # gt.txt
-    detections = []
+
+    # Search best alpha and rho
     if best_pairs:
         hyperparameter_search(groundtruth_list)
-    else:
-        if colorspace is not None:
-            if colorspace.lower()=="rgb":
-                print("rgb")
-            elif colorspace.lower()=="hsv":
-                print("hsv")
-                if os.path.exists('detections_h.pkl'):
-                    with open('detections_h.pkl', 'rb') as p:
-                        detections = pickle.load(p)
-                else:
-                    # This function lasts about 10 minutes
-                    detections = single_gaussian_model(roi_path, video_path, alpha=1.25, rho=1, adaptive=adaptive, export_frames=export_frames, only_h=True)
-        else:
-            if os.path.exists('detections.pkl') and use_detections_pkl:
-                with open('detections.pkl', 'rb') as p:
+
+    # Check colorspace
+    if colorspace is not None:
+        if colorspace.lower() == "hsv":
+            print("hsv")
+            # Load detections
+            if os.path.exists('detections_h.pkl') and use_detections_pkl:
+                with open('detections_h.pkl', 'rb') as p:
                     detections = pickle.load(p)
             else:
-
+                # Compute detections
                 # This function lasts about 10 minutes
-                detections = single_gaussian_model(roi_path, video_path, alpha=2.5, rho=1, adaptive=adaptive, export_frames=export_frames)
-            print(len(detections))
-            plot_bboxes(video_path, groundtruth_list, detections)
+                detections = single_gaussian_model(roi_path, video_path, alpha=1.25, rho=1, adaptive=adaptive, export_frames=export_frames, only_h=True)
+    else:
+        # Load detections
+        if os.path.exists('detections.pkl') and use_detections_pkl:
+            with open('detections.pkl', 'rb') as p:
+                detections = pickle.load(p)
+        else:
+            # Compute detections
+            # This function lasts about 10 minutes
+            detections = single_gaussian_model(roi_path, video_path, alpha=2.5, rho=1, adaptive=adaptive, export_frames=export_frames)
+        #print(len(detections))
+        plot_bboxes(video_path, groundtruth_list, detections)
 
-    print('Compute mAP0.5')
+    print('Compute mAP@0.5')
     gt_filtered = [x for x in groundtruth_list if x.frame > int(2141*0.25)]         # filter 25% of gt
     compute_mAP(gt_filtered, detections)
 
@@ -126,5 +127,3 @@ if __name__ == "__main__":
     print('mAP0.5 for GMG:')
     detectionsGMG_filtered = [x for x in detectionsGMG if x.frame > int(2141 * 0.25)]
     compute_mAP(gt_filtered, detectionsGMG_filtered)
-
-
