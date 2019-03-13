@@ -35,7 +35,6 @@ def filter_connected_components(bbox, min_h, max_h, min_w, max_w, min_ratio, max
 
 
 def visualize_boxes(pixel_candidates, gt_candidate, detection_candidate):
-    #print('hey')
     fig, ax = plt.subplots(figsize=(10, 6))
     ax.imshow(pixel_candidates)
     for candidate in gt_candidate:
@@ -45,15 +44,12 @@ def visualize_boxes(pixel_candidates, gt_candidate, detection_candidate):
 
     for candidate in detection_candidate:
         minc, minr, maxc, maxr = candidate
-        #print('Minc:{0} Minr: {1} Maxc;{2} Maxr:{3}'.format(minc, minr, maxc, maxr))
         rect = mpatches.Rectangle((minc, minr), maxc-minc+1, maxr-minr+1, fill=False, edgecolor='red', linewidth=2)
         ax.add_patch(rect)
 
     plt.show()
 
-
 def plot_bboxes(video_path, groundtruth, detections):
-    print('print')
     capture = cv2.VideoCapture(video_path)
     n_frame = 0
 
@@ -62,16 +58,12 @@ def plot_bboxes(video_path, groundtruth, detections):
         if not valid:
             break
 
-        if n_frame > 600 and n_frame < 1200:
+        if n_frame > 600:
             # Get groundtruth of the target frame
             gt_on_frame = [x for x in groundtruth if x.frame == n_frame]
             gt_bboxes = [o.bbox for o in gt_on_frame]
             detections_on_frame = [x for x in detections if x.frame == n_frame]
             detections_bboxes = [o.bbox for o in detections_on_frame]
-            if (len(gt_bboxes) != len(detections_bboxes)):
-                print(n_frame)
-                print(len(gt_bboxes))
-                print(len(detections_bboxes))
             visualize_boxes(image, gt_bboxes, detections_bboxes)
 
         n_frame += 1

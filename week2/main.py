@@ -13,12 +13,15 @@ video_path = "../datasets/AICity_data/train/S03/c010/vdo.avi"
 groundtruth_xml_path = "../annotations/m6-full_annotation.xml"
 groundtruth_path = "../datasets/AICity_data/train/S03/c010/gt/gt.txt"
 roi_path = '../datasets/AICity_data/train/S03/c010/roi.jpg'
-ALPHAS = [0, 0.5, 1., 1.5, 2., 2.5, 3., 3.5, 4. ]
-RHOS = [0.25, 0.5, 0.75, 1.]
+
 # colorspace can be: None, HSV
 colorspace = None
 
 def hyperparameter_search(groundtruth_list):
+
+    ALPHAS = [0, 0.5, 1., 1.5, 2., 2.5, 3., 3.5, 4.]
+    RHOS = [0.25, 0.5, 0.75, 1.]
+
     F1_alpha = []
     F1_rho = []
 
@@ -61,9 +64,6 @@ def hyperparameter_search(groundtruth_list):
     # plt.axis([, 160, 0, 0.03])
     plt.grid(True)
     plt.show()
-
-    # State-of-the-art background subtractors
-    # BackgroundSubtractor(video_path, export_frames=export_frames)
 
 def grid_search():
     parameters = {'alpha': ALPHAS, 'rho': RHOS}
@@ -119,10 +119,13 @@ if __name__ == "__main__":
     # State-of-the-art background subtractors
     detectionsMOG, detectionsMOG2, detectionsGMG = BackgroundSubtractor(video_path, export_frames=export_frames)
     print('mAP0.5 for MOG:')
-    compute_mAP(groundtruth_list, detectionsMOG)
+    detectionsMOG_filtered = [x for x in detectionsMOG if x.frame > int(2141 * 0.25)]
+    compute_mAP(gt_filtered, detectionsMOG_filtered)
     print('mAP0.5 for MOG2:')
-    compute_mAP(groundtruth_list, detectionsMOG2)
+    detectionsMOG2_filtered = [x for x in detectionsMOG2 if x.frame > int(2141 * 0.25)]
+    compute_mAP(gt_filtered, detectionsMOG2_filtered)
     print('mAP0.5 for GMG:')
-    compute_mAP(groundtruth_list, detectionsGMG)
+    detectionsGMG_filtered = [x for x in detectionsGMG if x.frame > int(2141 * 0.25)]
+    compute_mAP(gt_filtered, detectionsGMG_filtered)
 
 
