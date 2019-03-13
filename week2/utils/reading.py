@@ -81,7 +81,7 @@ def read_annotations(annotation_path, video_path):
     return ground_truths
 
 
-def read_annotations_from_txt(gt_path):
+def read_annotations_from_txt(gt_path, analyze=True):
     """
     Read annotations from the txt files
     Arguments:
@@ -89,12 +89,31 @@ def read_annotations_from_txt(gt_path):
     :returns: list of Detection
     """
     ground_truths_list = list()
+    if analyze:
+        max_w = 0
+        min_w = 2000
+        max_h = 0
+        min_h = 2000
+        min_ratio = 100
+        max_ratio = 0
     with open(gt_path) as f:
         for line in f:
             data = line.split(',')
             ground_truths_list.append(Detection(int(data[0]), 'car', int(float(data[2])), int(float(data[3])), int(float(data[4])), int(float(data[5])),float(data[6])))
 
+            if analyze:
+                if int(data[4]) < min_w: min_w = int(data[4])
+                if int(data[4]) > max_w: max_w = int(data[4])
+                if int(data[5]) < min_h: min_h = int(data[5])
+                if int(data[5]) > max_h: max_h = int(data[5])
+                if int(data[5])/int(data[4]) > max_ratio: max_ratio = int(data[5])/int(data[4])
+                if int(data[5])/int(data[4]) < min_ratio: min_ratio = int(data[5])/int(data[4])
+    print('width: [{0}, {1}]'.format(min_w, max_w))
+    print('height: [{0}, {1}]'.format(min_h, max_h))
+    print('ratio: [{0}, {1}]'.format(min_ratio, max_ratio))
+
     return ground_truths_list
+
 
 def read_annotations_file(gt_path, video_path):
     if (gt_path.endswith('.txt')):

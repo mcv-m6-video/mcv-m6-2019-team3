@@ -12,6 +12,7 @@ from utils.candidate_generation_window import plot_bboxes
 video_path = "../datasets/AICity_data/train/S03/c010/vdo.avi"
 groundtruth_xml_path = "../annotations/m6-full_annotation.xml"
 groundtruth_path = "../datasets/AICity_data/train/S03/c010/gt/gt.txt"
+roi_path = '../datasets/AICity_data/train/S03/c010/roi.jpg'
 ALPHAS = [0, 0.5, 1., 1.5, 2., 2.5, 3., 3.5, 4. ]
 RHOS = [0.25, 0.5, 0.75, 1.]
 # colorspace can be: None, HSV
@@ -22,7 +23,7 @@ def hyperparameter_search(groundtruth_list):
     F1_rho = []
 
     for alpha in ALPHAS:
-        detections = single_gaussian_model(video_path, alpha=alpha, rho=1, adaptive=False, export_frames=export_frames)
+        detections = single_gaussian_model(roi_path, video_path, alpha=alpha, rho=1, adaptive=False, export_frames=export_frames)
         print('Compute mAP0.5 for alpha: {}'.format(alpha))
         precision, recall, max_precision_per_step, F1, mAP = compute_mAP(groundtruth_list, detections)
         F1_alpha.append([mAP, alpha])
@@ -41,7 +42,7 @@ def hyperparameter_search(groundtruth_list):
     plt.show()
 
     for rho in RHOS:
-        detections = single_gaussian_model(video_path, alpha=best_alpha, rho=rho, adaptive=True,
+        detections = single_gaussian_model(roi_path, video_path, alpha=best_alpha, rho=rho, adaptive=True,
                                            export_frames=export_frames)
         print('Compute mAP0.5 for rho: {}'.format(rho))
         precision, recall, max_precision_per_step, F1,mAP = compute_mAP(groundtruth_list, detections)
@@ -79,6 +80,8 @@ if __name__ == "__main__":
     export_frames = False
     best_pairs = False
     adaptive = True
+    use_detections_pkl = False
+
 
     #Evaluate against groundtruth
     print("Getting groundtruth")
@@ -97,12 +100,17 @@ if __name__ == "__main__":
                         detections = pickle.load(p)
                 else:
                     # This function lasts about 10 minutes
-                    detections = single_gaussian_model(video_path, alpha=1.25, rho=1, adaptive=adaptive, export_frames=export_frames, only_h=True)
+                    detections = single_gaussian_model(roi_path, video_path, alpha=1.25, rho=1, adaptive=adaptive, export_frames=export_frames, only_h=True)
         else:
-            # This function lasts about 10 minutes
-            detections = single_gaussian_model(video_path, alpha=2.5, rho=1, adaptive=adaptive, export_frames=export_frames)
+            if os.path.exists('detections.pkl') and use_detections_pkl:
+                with open('detections.pkl', 'rb') as p:
+                    detections = pickle.load(p)
+            else:
 
-        #plot_bboxes(video_path, groundtruth_list, detections)
+                # This function lasts about 10 minutes
+                detections = single_gaussian_model(roi_path, video_path, alpha=2.5, rho=1, adaptive=adaptive, export_frames=export_frames)
+            print(len(detections))
+            plot_bboxes(video_path, groundtruth_list, detections)
 
     print('Compute mAP0.5')
     gt_filtered = [x for x in groundtruth_list if x.frame > int(2141*0.25)]         # filter 25% of gt

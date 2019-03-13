@@ -2,6 +2,7 @@ import cv2
 import os
 import pickle
 
+
 import numpy as np
 from tqdm import tqdm
 
@@ -31,10 +32,6 @@ def get_pixels_single_gaussian_model(video_path, last_frame=int(2141*0.25), only
 
         gaussians[n_frame, :, :] = image
 
-        # Get groundtruth and detections from frame n
-        #gt_on_frame = [x for x in groundtruth_list if x.frame == n]
-        #gt_bboxes = [o.bbox for o in gt_on_frame]
-
         pbar.update(1)
         n_frame += 1
 
@@ -54,7 +51,7 @@ def get_frame_mask_single_gaussian_model(img, model_mean, model_std, alpha):
     return abs(img - model_mean) >= alpha*(model_std+2)     # Foreground
 
 
-def get_fg_mask_single_gaussian_model(video_path, first_frame, model_mean, model_std, alpha, rho, adaptive=False, only_h=False, min_size=0, max_size=1000, min_ratio=3, max_ratio=0.3):
+def get_fg_mask_single_gaussian_model(roi, video_path, first_frame, model_mean, model_std, alpha, rho, adaptive=False, only_h=False, min_h=106, max_h=460, min_w=120, max_w=574, min_ratio=0.4, max_ratio=1.15):
     capture = cv2.VideoCapture(video_path)
     n_frame = 0
     detections = []
@@ -72,9 +69,9 @@ def get_fg_mask_single_gaussian_model(video_path, first_frame, model_mean, model
                 image = image[:,:,0]
             else:
                 image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-            foreground[n_frame-first_frame-1, :, :] = morphological_filtering(get_frame_mask_single_gaussian_model
+            foreground[n_frame-first_frame-1, :, :] = roi*morphological_filtering(get_frame_mask_single_gaussian_model
                                                                               (image, model_mean, model_std, alpha))
-            window_candidates = candidate_generation_window_ccl(n_frame, foreground[n_frame-first_frame-1, :, :], min_size, max_size, min_ratio, max_ratio)
+            window_candidates = candidate_generation_window_ccl(n_frame, foreground[n_frame-first_frame-1, :, :], min_h, max_h, min_w, max_w, min_ratio, max_ratio)
             detections.extend(window_candidates)
             #visualize_boxes(image, window_candidates)
 
@@ -90,7 +87,8 @@ def get_fg_mask_single_gaussian_model(video_path, first_frame, model_mean, model
     return foreground, detections
 
 
-def single_gaussian_model(video_path, alpha, rho, adaptive=False, export_frames=False, only_h=False):
+def single_gaussian_model(roi_path, video_path, alpha, rho, adaptive=False, export_frames=False, only_h=False):
+    roi = cv2.cvtColor(cv2.imread(roi_path), cv2.COLOR_BGR2GRAY)
 
     print('Computing Gaussian model...')
     if only_h:
@@ -107,7 +105,7 @@ def single_gaussian_model(video_path, alpha, rho, adaptive=False, export_frames=
 
     print('Gaussian computed for pixels')
     print('\nExtracting Background...')
-    bg, detections = get_fg_mask_single_gaussian_model(video_path, first_frame=int(2141 * 0.25), model_mean=mean, model_std=std,
+    bg, detections = get_fg_mask_single_gaussian_model(roi, video_path, first_frame=int(2141 * 0.25), model_mean=mean, model_std=std,
                                             alpha=alpha, rho=rho, adaptive=adaptive, only_h=only_h)
     print('Extracted background with shape {}'.format(bg.shape))
 
