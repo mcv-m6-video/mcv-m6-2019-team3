@@ -17,14 +17,13 @@ pip install -r requirements.txt
 
 ```
 .
-├── annotations              
-├── datasets
-├── evaluation   
-    ├── evaluation functions
-    └── temporal analysis
+├── annotations/              
+├── datasets/
 ├── requirements.txt    # python dependencies
-└── utils
-    ├── Detection
-    ├── Reader
-    └── Optical flow
+├── week1/
+└── week2/
+    ├── evaluation/
+    ├── main.py
+    ├── processing/
+    └── util/
 ```
