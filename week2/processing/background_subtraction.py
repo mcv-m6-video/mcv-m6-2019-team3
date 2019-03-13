@@ -42,7 +42,8 @@ def get_pixels_single_gaussian_model(video_path, last_frame=int(2141*0.25), only
 
     print("\nComputing mean...")
     gauss_mean = gaussians.mean(axis=0)
-
+    print(np.shape(gauss_mean))
+    # cv2.imwrite("./plots/gauss_mean.png",gauss_mean.astype(np.uint8))
     print("Computing standard deviation...")
     gauss_std = gaussians.std(axis=0)
 
