@@ -1,13 +1,12 @@
 import os
 import pickle
 import numpy as np
-import matplotlib.pyplot as plt
 
 from processing.background_subtraction import BackgroundSubtractor, single_gaussian_model
 from utils.reading import read_annotations_file
 from evaluation.evaluation_funcs import compute_mAP
-from utils.candidate_generation_window import plot_bboxes
-from mpl_toolkits.mplot3d import Axes3D
+from utils.plotting import plot2D,plot3D
+
 
 
 video_path = "../datasets/AICity_data/train/S03/c010/vdo.avi"
@@ -20,6 +19,7 @@ colorspace = None
 
 ALPHAS = [2.3, 2.5, 2.7]
 RHOS = [0.8, 0.9, 1.0]
+#mAP = [0.316, 0.516, 0.531, 0.251, 0.529, 0.531, 0.186, 0.524, 0.563]
 
 def hyperparameter_search(groundtruth_list):
 
@@ -35,15 +35,13 @@ def hyperparameter_search(groundtruth_list):
     best_alpha = best_alpha_case[1]
     best_F1_alpha = best_alpha_case[0]
 
-    print("Best F1: {} with the alpha: {}".format(best_F1_alpha, best_alpha))
-    plt.plot(F1_alpha[1], F1_alpha[0], linewidth=2.0)
-    plt.xlabel('ALPHA')
-    plt.ylabel('mAP')
-    plt.title('Choosing alpha')
-    #plt.text(60, .025, r'$\mu=100,\ \sigma=15$')
-    #plt.axis([, 160, 0, 0.03])
-    plt.grid(True)
-    plt.show()
+    print("Best mAP: {} with the alpha: {}".format(best_F1_alpha, best_alpha))
+
+    X = np.array(F1_alpha)[:,1]
+
+    Y = np.array(F1_alpha)[:,0]
+
+    plot2D(X, Y, "ALPHA", "mAP", "Choosing alpha")
 
     for rho in RHOS:
         detections = single_gaussian_model(roi_path, video_path, alpha=best_alpha, rho=rho, adaptive=True,
@@ -54,52 +52,37 @@ def hyperparameter_search(groundtruth_list):
     best_rho_case = np.amax(F1_rho, axis=0)
     best_rho = best_rho_case[1]
     best_F1_rho = best_rho_case[0]
-    print("Best F1: {} with the rho: {}".format(best_F1_rho, best_rho))
 
-    print("Best F1: {} with the alpha: {}".format(best_F1_alpha, best_alpha))
-    plt.plot(F1_rho[1], F1_rho[0], linewidth=2.0)
-    plt.xlabel('RHO')
-    plt.ylabel('mAP')
-    plt.title('Choosing rho')
-    # plt.text(60, .025, r'$\mu=100,\ \sigma=15$')
-    # plt.axis([, 160, 0, 0.03])
-    plt.grid(True)
-    plt.show()
+    print("Best mAP: {} with the rho: {}".format(best_F1_rho, best_rho))
 
-def grid_search():
-    parameters = {'alpha': ALPHAS, 'rho': RHOS}
-    gs = grid_search.GridSearch()
-    # State-of-the-art background subtractors
-    # BackgroundSubtractor(video_path, export_frames=export_frames)
+    X = np.array(F1_rho)[:,1]
 
-def gridsearch():
+    Y = np.array(F1_rho)[:,0]
+
+    plot2D(X, Y, "RO", "mAP", "Choosing ro")
+
+def gridsearch(groundtruth_list):
     mAP_total = []
-
+    Z = np.zeros([len(ALPHAS),len(RHOS)])
     for i,alpha in enumerate(ALPHAS):
         for j,rho in enumerate(RHOS):
-            detections = single_gaussian_model(video_path, alpha=alpha, rho=1, adaptive=True,
-                                               export_frames=export_frames)
+            detections = single_gaussian_model(roi_path, video_path, alpha=alpha, rho=rho, adaptive=True,
+                                               export_frames=False)
             print('Compute mAP0.5 for alpha {} and rho {}'.format(alpha, rho))
             precision, recall, max_precision_per_step, F1, mAP = compute_mAP(groundtruth_list, detections)
             mAP_total.append([mAP, alpha, rho])
+            Z[i,j] = mAP
 
     best_case = np.amax(mAP_total, axis=0)
 
     print("Best mAP: {} with alpha: {} and rho {}".format(best_case[0], best_case[1], best_case[2]))
 
     # Plot grid search
-    X, Y = np.meshgrid(RHOS,ALPHAS)
-    Z = np.array(mAP_total)[:,0]
+    X, Y = np.meshgrid(RHOS, ALPHAS)
 
-    fig = plt.figure()
-    ax = fig.add_subplot(111, projection='3d')
-    ax.plot_surface(X, Y, Z, cmap='plasma')
-    axis = ["Ro", "Alpha", "mAP"]
-    ax.set_xlabel(axis[0])
-    ax.set_ylabel(axis[1])
-    ax.set_zlabel(axis[2])
-    plt.savefig('grid_search.png',dpi=300)
-    plt.show()
+    plot3D(X,Y,Z)
+
+
 
 if __name__ == "__main__":
 
@@ -107,53 +90,61 @@ if __name__ == "__main__":
     find_best_pairs = False
     adaptive = False
     use_detections_pkl = False
+    grid_search = True
+    no_hyperparameter = False
     detections = []
 
     # Read groundtruth
     print("Getting groundtruth")
     groundtruth_list = read_annotations_file(groundtruth_path, video_path)          # gt.txt
+    gt_filtered = [x for x in groundtruth_list if x.frame > int(2141 * 0.25)]  # filter 25% of gt
 
     # Search best alpha and rho
     if find_best_pairs:
         print("Computing best alpha and rho")
-        hyperparameter_search(groundtruth_list)
+        hyperparameter_search(gt_filtered)
 
-    # Check colorspace
-    if colorspace is not None:
-        if colorspace.lower() == "hsv":
-            print("hsv")
+    if grid_search:
+        print("Computing best alpha and rho with gridsearch")
+        gridsearch(gt_filtered)
+
+    if no_hyperparameter:
+
+        # Check colorspace
+        if colorspace is not None:
+            if colorspace.lower() == "hsv":
+                print("hsv")
+                # Load detections
+                if use_detections_pkl and os.path.exists('detections_h.pkl'):
+                    with open('detections_h.pkl', 'rb') as p:
+                        detections = pickle.load(p)
+                else:
+                    # Compute detections
+                    # This function lasts about 10 minutes
+                    detections = single_gaussian_model(roi_path, video_path, alpha=1.25, rho=1, adaptive=adaptive, export_frames=export_frames, only_h=True)
+        else:
             # Load detections
-            if use_detections_pkl and os.path.exists('detections_h.pkl'):
-                with open('detections_h.pkl', 'rb') as p:
+            if use_detections_pkl and os.path.exists('detections.pkl'):
+                with open('detections.pkl', 'rb') as p:
                     detections = pickle.load(p)
             else:
                 # Compute detections
                 # This function lasts about 10 minutes
-                detections = single_gaussian_model(roi_path, video_path, alpha=1.25, rho=1, adaptive=adaptive, export_frames=export_frames, only_h=True)
-    else:
-        # Load detections
-        if use_detections_pkl and os.path.exists('detections.pkl'):
-            with open('detections.pkl', 'rb') as p:
-                detections = pickle.load(p)
-        else:
-            # Compute detections
-            # This function lasts about 10 minutes
-            detections = single_gaussian_model(roi_path, video_path, alpha=2.5, rho=1, adaptive=adaptive, export_frames=export_frames)
-        #print(len(detections))
-        #plot_bboxes(video_path, groundtruth_list, detections)
+                detections = single_gaussian_model(roi_path, video_path, alpha=2.5, rho=1, adaptive=adaptive, export_frames=export_frames)
+            #print(len(detections))
+            #plot_bboxes(video_path, groundtruth_list, detections)
 
-    print('Compute mAP@0.5')
-    gt_filtered = [x for x in groundtruth_list if x.frame > int(2141*0.25)]         # filter 25% of gt
-    compute_mAP(gt_filtered, detections)
+        print('Compute mAP@0.5')
+        compute_mAP(gt_filtered, detections)
 
-    # State-of-the-art background subtractors
-    detectionsMOG, detectionsMOG2, detectionsGMG = BackgroundSubtractor(video_path, export_frames=export_frames)
-    print('mAP0.5 for MOG:')
-    detectionsMOG_filtered = [x for x in detectionsMOG if x.frame > int(2141 * 0.25)]
-    compute_mAP(gt_filtered, detectionsMOG_filtered)
-    print('mAP0.5 for MOG2:')
-    detectionsMOG2_filtered = [x for x in detectionsMOG2 if x.frame > int(2141 * 0.25)]
-    compute_mAP(gt_filtered, detectionsMOG2_filtered)
-    print('mAP0.5 for GMG:')
-    detectionsGMG_filtered = [x for x in detectionsGMG if x.frame > int(2141 * 0.25)]
-    compute_mAP(gt_filtered, detectionsGMG_filtered)
+        # State-of-the-art background subtractors
+        detectionsMOG, detectionsMOG2, detectionsGMG = BackgroundSubtractor(video_path, export_frames=export_frames)
+        print('mAP0.5 for MOG:')
+        detectionsMOG_filtered = [x for x in detectionsMOG if x.frame > int(2141 * 0.25)]
+        compute_mAP(gt_filtered, detectionsMOG_filtered)
+        print('mAP0.5 for MOG2:')
+        detectionsMOG2_filtered = [x for x in detectionsMOG2 if x.frame > int(2141 * 0.25)]
+        compute_mAP(gt_filtered, detectionsMOG2_filtered)
+        print('mAP0.5 for GMG:')
+        detectionsGMG_filtered = [x for x in detectionsGMG if x.frame > int(2141 * 0.25)]
+        compute_mAP(gt_filtered, detectionsGMG_filtered)
