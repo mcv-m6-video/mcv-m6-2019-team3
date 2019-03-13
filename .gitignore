@@ -7,6 +7,7 @@ week1/frames/
 datasets/AICity_data/train/S03/c010/vdo.avi
 *.idea
 week2/output_frames/
+week2/grid_search
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
