@@ -52,7 +52,7 @@ def get_frame_mask_single_gaussian_model(img, model_mean, model_std, alpha):
     return abs(img - model_mean) >= alpha*(model_std+2)     # Foreground
 
 
-def get_fg_mask_single_gaussian_model(roi, video_path, first_frame, model_mean, model_std, alpha, rho, adaptive=False, only_h=False, min_h=80, max_h=500, min_w=100, max_w=600, min_ratio=0.2, max_ratio=1.30):
+def get_fg_mask_single_gaussian_model(roi, video_path, first_frame, model_mean, model_std, alpha, rho, adaptive=False, only_h=False, min_h=100, max_h=480, min_w=100, max_w=600, min_ratio=0.4, max_ratio=1.30):
     capture = cv2.VideoCapture(video_path)
     n_frame = 0
     detections = []
