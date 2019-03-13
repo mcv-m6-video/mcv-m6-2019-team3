@@ -10,14 +10,13 @@ python main.py
 We set some flags to change the behaviour of the program:
 ```
 colorspace = None               # [None, 'HSV']
-adaptive = True                # Use adaptive or non-adaptive algorithm
-use_detections_pkl = True      # Load .pkl instead of compute the intermediate results
+adaptive = True                 # Use adaptive or non-adaptive algorithm
+use_detections_pkl = True       # Load .pkl instead of compute the intermediate results
 export_frames = False           # Save .png images to disk
 
 # Find best alpha and rho
 find_best_pairs = False         # Search best alpha for non-adaptive and then best rho for adaptive
-grid_search = False       
-no_hyperparameter = False
+grid_search = False       	# Enable grid search
 ```
 
 ## Directory structure
