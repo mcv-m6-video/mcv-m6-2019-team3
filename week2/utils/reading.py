@@ -108,9 +108,9 @@ def read_annotations_from_txt(gt_path, analyze=True):
                 if int(data[5]) > max_h: max_h = int(data[5])
                 if int(data[5])/int(data[4]) > max_ratio: max_ratio = int(data[5])/int(data[4])
                 if int(data[5])/int(data[4]) < min_ratio: min_ratio = int(data[5])/int(data[4])
-    print('width: [{0}, {1}]'.format(min_w, max_w))
-    print('height: [{0}, {1}]'.format(min_h, max_h))
-    print('ratio: [{0}, {1}]'.format(min_ratio, max_ratio))
+    # print('width: [{0}, {1}]'.format(min_w, max_w))
+    # print('height: [{0}, {1}]'.format(min_h, max_h))
+    # print('ratio: [{0}, {1}]'.format(min_ratio, max_ratio))
 
     return ground_truths_list
 

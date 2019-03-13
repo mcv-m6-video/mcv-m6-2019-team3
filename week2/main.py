@@ -15,7 +15,6 @@ groundtruth_path = "../datasets/AICity_data/train/S03/c010/gt/gt.txt"
 roi_path = '../datasets/AICity_data/train/S03/c010/roi.jpg'
 
 # colorspace can be: None, HSV
-colorspace = None
 ALPHAS = [0, 0.5, 1., 1.5, 2., 2.5, 3., 3.5, 4.]
 RHOS = [0.25, 0.5, 0.75, 1.]
 
@@ -47,7 +46,7 @@ def hyperparameter_search(groundtruth_list):
         detections = single_gaussian_model(roi_path, video_path, alpha=best_alpha, rho=rho, adaptive=True,
                                            export_frames=export_frames)
         print('Compute mAP0.5 for rho: {}'.format(rho))
-        precision, recall, max_precision_per_step, F1,mAP = compute_mAP(groundtruth_list, detections)
+        precision, recall, max_precision_per_step, F1, mAP = compute_mAP(groundtruth_list, detections)
         F1_rho.append([mAP, rho])
     best_rho_case = np.amax(F1_rho, axis=0)
     best_rho = best_rho_case[1]
@@ -74,15 +73,17 @@ def grid_search():
 
 if __name__ == "__main__":
 
+    colorspace = None          # [None, 'HSV']
     export_frames = False
     find_best_pairs = False
-    adaptive = False
-    use_detections_pkl = False
+    adaptive = True
+    use_detections_pkl = True
     detections = []
 
     # Read groundtruth
     print("Getting groundtruth")
     groundtruth_list = read_annotations_file(groundtruth_path, video_path)          # gt.txt
+    print("Groundtruth loaded\n")
 
     # Search best alpha and rho
     if find_best_pairs:
@@ -96,7 +97,9 @@ if __name__ == "__main__":
             # Load detections
             if use_detections_pkl and os.path.exists('detections_h.pkl'):
                 with open('detections_h.pkl', 'rb') as p:
+                    print("Reading detections from detections_h.pkl")
                     detections = pickle.load(p)
+                    print("Detections loaded\n")
             else:
                 # Compute detections
                 # This function lasts about 10 minutes
@@ -105,7 +108,9 @@ if __name__ == "__main__":
         # Load detections
         if use_detections_pkl and os.path.exists('detections.pkl'):
             with open('detections.pkl', 'rb') as p:
+                print("Reading detections from detections.pkl")
                 detections = pickle.load(p)
+                print("Detections loaded\n")
         else:
             # Compute detections
             # This function lasts about 10 minutes
@@ -113,11 +118,12 @@ if __name__ == "__main__":
         #print(len(detections))
         #plot_bboxes(video_path, groundtruth_list, detections)
 
-    print('Compute mAP@0.5')
+    print('Computing mAP@0.5')
     gt_filtered = [x for x in groundtruth_list if x.frame > int(2141*0.25)]         # filter 25% of gt
     compute_mAP(gt_filtered, detections)
 
     # State-of-the-art background subtractors
+    print("Computing detections for state-of-the-art algorithms")
     detectionsMOG, detectionsMOG2, detectionsGMG = BackgroundSubtractor(video_path, export_frames=export_frames)
     print('mAP0.5 for MOG:')
     detectionsMOG_filtered = [x for x in detectionsMOG if x.frame > int(2141 * 0.25)]

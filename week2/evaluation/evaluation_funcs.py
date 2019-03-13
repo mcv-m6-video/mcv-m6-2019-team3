@@ -39,8 +39,8 @@ def compute_IoU(video_path, groundtruth_list, detections_list):
             for det_bbox in detections_bboxes:
                 IoU_temp_detections.append(np.max([bbox_iou(det_bbox, gt_bbox) for gt_bbox in gt_bboxes]))
             IoU_temp = np.mean(IoU_temp_detections)
-            recall = float(TP_temp) / float(TP_temp+FP_temp)
-            precision = float(TP_temp) / float(TP_temp+FN_temp)
+            precision = float(TP_temp) / float(TP_temp+FP_temp)
+            recall = float(TP_temp) / float(TP_temp+FN_temp)
             F1_score = 2*recall*precision / (recall+precision)
 
         TP += TP_temp
@@ -51,8 +51,8 @@ def compute_IoU(video_path, groundtruth_list, detections_list):
         F1_frames.append([F1_score, precision, recall])
         n += 1
     IoU = IoU/n
-    recall = float(TP) / float(TP+FP)
-    precision = float(TP) / float(TP+FN)
+    precision = float(TP) / float(TP+FP)
+    recall = float(TP) / float(TP+FN)
     F1_score = 2*recall*precision / (recall+precision)
     print("TP={} FN={} FP={}".format(TP, FN, FP))
     print("IoU={}".format(IoU))
@@ -153,8 +153,8 @@ def compute_mAP(groundtruth_list_original, detections_list, IoU_threshold=0.5):
     precision = 0
     F1_score = 0
     if TP > 0:
-        recall = float(TP) / float(TP + FP)
-        precision = float(TP) / float(TP + FN)
+        precision = float(TP) / float(TP + FP)
+        recall = float(TP) / float(TP + FN)
         F1_score = 2 * recall * precision / (recall + precision)
     #print(TP+FP)
     #print("precision:{}".format(precision))
