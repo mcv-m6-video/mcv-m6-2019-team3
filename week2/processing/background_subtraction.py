@@ -5,8 +5,14 @@ import pickle
 import numpy as np
 from tqdm import tqdm
 
+from evaluation.evaluation_funcs import compute_mAP
+from utils.candidate_generation_window import candidate_generation_window_ccl, visualize_boxes
 from utils.morphology_utils import morphological_filtering
-from utils.candidate_generation_window import visualize_boxes, candidate_generation_window_ccl
+from utils.plotting import plot2D,plot3D
+
+############################################
+########### Single gaussian method
+############################################
 
 def get_pixels_single_gaussian_model(video_path, last_frame=int(2141*0.25), only_h=False):
     capture = cv2.VideoCapture(video_path)
@@ -36,7 +42,6 @@ def get_pixels_single_gaussian_model(video_path, last_frame=int(2141*0.25), only
 
     print("\nComputing mean...")
     gauss_mean = gaussians.mean(axis=0)
-    # cv2.imwrite("./plots/gauss_mean.png",gauss_mean.astype(np.uint8))
     print("Computing standard deviation...")
     gauss_std = gaussians.std(axis=0)
 
@@ -133,7 +138,6 @@ def single_gaussian_model(roi_path, video_path, alpha, rho, adaptive=False, expo
 ########### State-of-the-art methods
 ############################################
 
-
 def BackgroundSubtractor(video_path, export_frames=False):
     capture = cv2.VideoCapture(video_path)
 
@@ -218,3 +222,70 @@ def BackgroundSubtractorGMG(fgbg_GMG, frame, i, export_frames=False):
         fgmask_out = cv2.resize(fgmask, (0, 0), fx=0.3, fy=0.3)
         cv2.imwrite('output_frames/GMG/frame_{:04d}.png'.format(i), fgmask_out.astype('uint8') * 255)
     return fgmask
+
+############################################
+########### Alpha & Rho Optimization
+############################################
+
+def hyperparameter_search(groundtruth_list, video_path, roi_path, ):
+
+    ALPHAS = [0, 0.5, 1., 1.5, 2., 2.5, 3., 3.5, 4.]
+    RHOS = [0.25, 0.5, 0.75, 1.]
+    F1_alpha = []
+    F1_rho = []
+
+    for alpha in ALPHAS:
+        detections = single_gaussian_model(roi_path, video_path, alpha=alpha, rho=1, adaptive=False)
+        print('Compute mAP0.5 for alpha: {}'.format(alpha))
+        precision, recall, max_precision_per_step, F1, mAP = compute_mAP(groundtruth_list, detections)
+        F1_alpha.append([mAP, alpha])
+    best_alpha_case = np.amax(F1_alpha, axis=0)
+    best_alpha = best_alpha_case[1]
+    best_F1_alpha = best_alpha_case[0]
+
+    print("Best mAP: {} with the alpha: {}".format(best_F1_alpha, best_alpha))
+
+    X = np.array(F1_alpha)[:,1]
+    Y = np.array(F1_alpha)[:,0]
+
+    plot2D(X, Y, "ALPHA", "mAP", "Choosing alpha")
+
+    for rho in RHOS:
+        detections = single_gaussian_model(roi_path, video_path, alpha=best_alpha, rho=rho, adaptive=True)
+        print('Compute mAP0.5 for rho: {}'.format(rho))
+        precision, recall, max_precision_per_step, F1, mAP = compute_mAP(groundtruth_list, detections)
+        F1_rho.append([mAP, rho])
+    best_rho_case = np.amax(F1_rho, axis=0)
+    best_rho = best_rho_case[1]
+    best_F1_rho = best_rho_case[0]
+
+    print("Best mAP: {} with the rho: {}".format(best_F1_rho, best_rho))
+
+    X = np.array(F1_rho)[:,1]
+    Y = np.array(F1_rho)[:,0]
+
+    plot2D(X, Y, "RO", "mAP", "Choosing ro")
+
+def gridsearch(groundtruth_list, video_path, roi_path):
+
+    ALPHAS = [2.3, 2.5, 2.7]
+    RHOS = [0.8, 0.9, 1.0]
+
+    mAP_total = []
+    Z = np.zeros([len(ALPHAS),len(RHOS)])
+    for i,alpha in enumerate(ALPHAS):
+        for j,rho in enumerate(RHOS):
+            detections = single_gaussian_model(roi_path, video_path, alpha=alpha, rho=rho, adaptive=True)
+            print('Compute mAP0.5 for alpha {} and rho {}'.format(alpha, rho))
+            precision, recall, max_precision_per_step, F1, mAP = compute_mAP(groundtruth_list, detections)
+            mAP_total.append([mAP, alpha, rho])
+            Z[i,j] = mAP
+
+    best_case = np.amax(mAP_total, axis=0)
+
+    print("Best mAP: {} with alpha: {} and rho {}".format(best_case[0], best_case[1], best_case[2]))
+
+    # Plot grid search
+    X, Y = np.meshgrid(RHOS, ALPHAS)
+
+    plot3D(X,Y,Z)
