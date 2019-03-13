@@ -9,15 +9,15 @@ python main.py
 
 We set some flags to change the behaviour of the program:
 ```
-    colorspace = None               # [None, 'HSV']
-    adaptive = False                # Use adaptive or non-adaptive algorithm
-    use_detections_pkl = False      # Load .pkl instead of compute the intermediate results
-    export_frames = False           # Save .png images to disk
+colorspace = None               # [None, 'HSV']
+adaptive = False                # Use adaptive or non-adaptive algorithm
+use_detections_pkl = False      # Load .pkl instead of compute the intermediate results
+export_frames = False           # Save .png images to disk
 
-    # Find best alpha and rho
-    find_best_pairs = False         # Search best alpha for non-adaptive and then best rho for adaptive
-    grid_search = False       
-    no_hyperparameter = False
+# Find best alpha and rho
+find_best_pairs = False         # Search best alpha for non-adaptive and then best rho for adaptive
+grid_search = False       
+no_hyperparameter = False
 ```
 
 ## Directory structure
