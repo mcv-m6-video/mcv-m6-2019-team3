@@ -99,22 +99,26 @@ if __name__ == "__main__":
                     # This function lasts about 10 minutes
                     detections = single_gaussian_model(video_path, alpha=1.25, rho=1, adaptive=adaptive, export_frames=export_frames, only_h=True)
         else:
-            # This function lasts about 10 minutes
-            detections = single_gaussian_model(video_path, alpha=2.5, rho=1, adaptive=adaptive, export_frames=export_frames)
+            if os.path.exists('detections.pkl'):
+                with open('detections.pkl', 'rb') as p:
+                    detections = pickle.load(p)
+            else:
+                # This function lasts about 10 minutes
+                detections = single_gaussian_model(video_path, alpha=2.5, rho=1, adaptive=adaptive, export_frames=export_frames)
 
         #plot_bboxes(video_path, groundtruth_list, detections)
 
     print('Compute mAP0.5')
     gt_filtered = [x for x in groundtruth_list if x.frame > int(2141*0.25)]         # filter 25% of gt
-    compute_mAP(gt_filtered, detections)
+    #compute_mAP(gt_filtered, detections)
 
     # State-of-the-art background subtractors
     detectionsMOG, detectionsMOG2, detectionsGMG = BackgroundSubtractor(video_path, export_frames=export_frames)
     print('mAP0.5 for MOG:')
-    compute_mAP(groundtruth_list, detectionsMOG)
+    compute_mAP(gt_filtered, detectionsMOG)
     print('mAP0.5 for MOG2:')
-    compute_mAP(groundtruth_list, detectionsMOG2)
+    compute_mAP(gt_filtered, detectionsMOG2)
     print('mAP0.5 for GMG:')
-    compute_mAP(groundtruth_list, detectionsGMG)
+    compute_mAP(gt_filtered, detectionsGMG)
 
 

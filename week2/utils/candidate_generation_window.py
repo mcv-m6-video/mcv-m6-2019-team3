@@ -7,7 +7,7 @@ import matplotlib.patches as mpatches
 from utils.detection import Detection
 
 
-def candidate_generation_window_ccl(n_frame, mask, min_size, max_size, min_ratio, max_ratio):
+def candidate_generation_window_ccl(n_frame, mask, min_size=0, max_size=1000, min_ratio=3, max_ratio=0.3):
     label_image = label(mask)
     regions = regionprops(label_image)
 

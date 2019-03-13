@@ -152,6 +152,8 @@ def BackgroundSubtractor(video_path, export_frames=False):
     detectionsMOG2 = []
     detectionsGMG = []
 
+    pbar = tqdm(total=2140)
+
     while capture.isOpened():
         valid, frame = capture.read()
         if not valid:
@@ -169,14 +171,16 @@ def BackgroundSubtractor(video_path, export_frames=False):
 
         maskMOG2 = morphological_filtering(maskMOG2)
         window_candidatesMOG2 = candidate_generation_window_ccl(i, maskMOG2)
-        detectionsMOG.extend(window_candidatesMOG2)
+        detectionsMOG2.extend(window_candidatesMOG2)
 
         maskGMG = morphological_filtering(maskGMG)
         window_candidatesGMG = candidate_generation_window_ccl(i, maskGMG)
-        detectionsMOG.extend(window_candidatesGMG)
+        detectionsGMG.extend(window_candidatesGMG)
 
+        pbar.update(1)
         i += 1
 
+    pbar.close()
     capture.release()
     cv2.destroyAllWindows()
 
