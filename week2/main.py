@@ -77,7 +77,7 @@ def grid_search():
 
 
 if __name__ == "__main__":
-    export_frames = False
+    export_frames = True
     best_pairs = False
     adaptive = True
     use_detections_pkl = False

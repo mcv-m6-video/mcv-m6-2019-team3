@@ -5,11 +5,12 @@ import pickle
 
 import numpy as np
 from tqdm import tqdm
+from matplotlib import pyplot as plt
+
 
 from utils.morphology_utils import morphological_filtering
 from utils.candidate_generation_window import visualize_boxes, candidate_generation_window_ccl
 
-#from week1.utils.reading import read_annotations_file
 
 def get_pixels_single_gaussian_model(video_path, last_frame=int(2141*0.25), only_h=False):
     capture = cv2.VideoCapture(video_path)
@@ -51,7 +52,7 @@ def get_frame_mask_single_gaussian_model(img, model_mean, model_std, alpha):
     return abs(img - model_mean) >= alpha*(model_std+2)     # Foreground
 
 
-def get_fg_mask_single_gaussian_model(roi, video_path, first_frame, model_mean, model_std, alpha, rho, adaptive=False, only_h=False, min_h=106, max_h=460, min_w=120, max_w=574, min_ratio=0.4, max_ratio=1.15):
+def get_fg_mask_single_gaussian_model(roi, video_path, first_frame, model_mean, model_std, alpha, rho, adaptive=False, only_h=False, min_h=80, max_h=500, min_w=100, max_w=600, min_ratio=0.2, max_ratio=1.30):
     capture = cv2.VideoCapture(video_path)
     n_frame = 0
     detections = []
@@ -69,8 +70,12 @@ def get_fg_mask_single_gaussian_model(roi, video_path, first_frame, model_mean, 
                 image = image[:,:,0]
             else:
                 image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-            foreground[n_frame-first_frame-1, :, :] = roi*morphological_filtering(get_frame_mask_single_gaussian_model
+            #plt.imshow(roi*get_frame_mask_single_gaussian_model(image, model_mean, model_std, alpha))
+            #plt.show()
+            foreground[n_frame-first_frame-1, :, :] = morphological_filtering(roi*get_frame_mask_single_gaussian_model
                                                                               (image, model_mean, model_std, alpha))
+            #plt.imshow(foreground[n_frame-first_frame-1, :, :])
+            #plt.show()
             window_candidates = candidate_generation_window_ccl(n_frame, foreground[n_frame-first_frame-1, :, :], min_h, max_h, min_w, max_w, min_ratio, max_ratio)
             detections.extend(window_candidates)
             #visualize_boxes(image, window_candidates)
@@ -114,7 +119,7 @@ def single_gaussian_model(roi_path, video_path, alpha, rho, adaptive=False, expo
         for frame in bg:
             new_image = frame.astype(np.uint8)
             new_image = cv2.resize(new_image, (0, 0), fx=0.3, fy=0.3)
-            cv2.imwrite('output_frames/single_gaussian/frame_{:04d}.png'.format(i), new_image.astype('uint8') * 255)
+            cv2.imwrite('output_frames/single_gaussian_constraint/frame_{:04d}.png'.format(i), new_image.astype('uint8') * 255)
             i += 1
     if only_h:
         with open('detections_h.pkl', 'wb') as f:
