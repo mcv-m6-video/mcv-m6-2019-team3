@@ -2,15 +2,11 @@ import cv2
 import os
 import pickle
 
-
 import numpy as np
 from tqdm import tqdm
-from matplotlib import pyplot as plt
-
 
 from utils.morphology_utils import morphological_filtering
 from utils.candidate_generation_window import visualize_boxes, candidate_generation_window_ccl
-
 
 def get_pixels_single_gaussian_model(video_path, last_frame=int(2141*0.25), only_h=False):
     capture = cv2.VideoCapture(video_path)
@@ -40,7 +36,6 @@ def get_pixels_single_gaussian_model(video_path, last_frame=int(2141*0.25), only
 
     print("\nComputing mean...")
     gauss_mean = gaussians.mean(axis=0)
-    print(np.shape(gauss_mean))
     # cv2.imwrite("./plots/gauss_mean.png",gauss_mean.astype(np.uint8))
     print("Computing standard deviation...")
     gauss_std = gaussians.std(axis=0)
@@ -62,6 +57,7 @@ def get_fg_mask_single_gaussian_model(roi, video_path, first_frame, model_mean, 
         valid, image = capture.read()
         if not valid:
             break
+
         if n_frame == first_frame:
             foreground = np.zeros((2141 - first_frame, image.shape[0], image.shape[1]))
         if n_frame > first_frame:
@@ -70,15 +66,13 @@ def get_fg_mask_single_gaussian_model(roi, video_path, first_frame, model_mean, 
                 image = image[:,:,0]
             else:
                 image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-            #plt.imshow(roi*get_frame_mask_single_gaussian_model(image, model_mean, model_std, alpha))
-            #plt.show()
+
             foreground[n_frame-first_frame-1, :, :] = morphological_filtering(roi*get_frame_mask_single_gaussian_model
                                                                               (image, model_mean, model_std, alpha))
-            #plt.imshow(foreground[n_frame-first_frame-1, :, :])
-            #plt.show()
+
             window_candidates = candidate_generation_window_ccl(n_frame, foreground[n_frame-first_frame-1, :, :], min_h, max_h, min_w, max_w, min_ratio, max_ratio)
             detections.extend(window_candidates)
-            #visualize_boxes(image, window_candidates)
+            #visualize_boxes(image, window_candidates, window_candidates)
 
             if adaptive:
                 model_mean = rho*image + (1-rho)*model_mean
@@ -92,15 +86,18 @@ def get_fg_mask_single_gaussian_model(roi, video_path, first_frame, model_mean, 
     return foreground, detections
 
 
-def single_gaussian_model(roi_path, video_path, alpha, rho, adaptive=False, export_frames=False, only_h=False):
+def single_gaussian_model(roi_path, video_path, alpha, rho, adaptive=False, export_frames=False, only_h=False, use_detections_pkl=True):
     roi = cv2.cvtColor(cv2.imread(roi_path), cv2.COLOR_BGR2GRAY)
 
     print('Computing Gaussian model...')
+
     if only_h:
         filename_mstd = 'mean_std_h.pkl'
     else:
         filename_mstd = 'mean_std.pkl'
-    if os.path.exists(filename_mstd):
+
+    # Load mean and std
+    if use_detections_pkl and os.path.exists(filename_mstd):
         with open(filename_mstd, 'rb') as p:
             mean, std = pickle.load(p)
     else:
@@ -108,8 +105,9 @@ def single_gaussian_model(roi_path, video_path, alpha, rho, adaptive=False, expo
         with open(filename_mstd, 'wb') as f:
             pickle.dump([mean, std], f)
 
-    print('Gaussian computed for pixels')
-    print('\nExtracting Background...')
+    print('Gaussian computed for pixels\n')
+
+    print('Extracting Background...')
     bg, detections = get_fg_mask_single_gaussian_model(roi, video_path, first_frame=int(2141 * 0.25), model_mean=mean, model_std=std,
                                             alpha=alpha, rho=rho, adaptive=adaptive, only_h=only_h)
     print('Extracted background with shape {}'.format(bg.shape))
@@ -121,6 +119,7 @@ def single_gaussian_model(roi_path, video_path, alpha, rho, adaptive=False, expo
             new_image = cv2.resize(new_image, (0, 0), fx=0.3, fy=0.3)
             cv2.imwrite('output_frames/single_gaussian_constraint/frame_{:04d}.png'.format(i), new_image.astype('uint8') * 255)
             i += 1
+
     if only_h:
         with open('detections_h.pkl', 'wb') as f:
             pickle.dump(detections, f)
@@ -199,15 +198,15 @@ def BackgroundSubtractor(video_path, export_frames=False):
 def BackgroundSubtractorMOG(fgbg_MOG, frame, i, export_frames=False):
     fgmask = fgbg_MOG.apply(frame)
     if export_frames:
-        fgmask = cv2.resize(fgmask, (0, 0), fx=0.3, fy=0.3)
-        cv2.imwrite('output_frames/MOG/frame_{:04d}.jpg'.format(i), fgmask)
+        fgmask_out = cv2.resize(fgmask, (0, 0), fx=0.3, fy=0.3)
+        cv2.imwrite('output_frames/MOG/frame_{:04d}.png'.format(i), fgmask_out.astype('uint8') * 255)
     return fgmask
 
 def BackgroundSubtractorMOG2(fgbg_MOG2, frame, i, export_frames=False):
     fgmask = fgbg_MOG2.apply(frame)
     if export_frames:
-        fgmask = cv2.resize(fgmask, (0, 0), fx=0.3, fy=0.3)
-        cv2.imwrite('output_frames/MOG2/frame_{:04d}.jpg'.format(i), fgmask)
+        fgmask_out = cv2.resize(fgmask, (0, 0), fx=0.3, fy=0.3)
+        cv2.imwrite('output_frames/MOG2/frame_{:04d}.png'.format(i), fgmask_out.astype('uint8') * 255)
     return fgmask
 
 def BackgroundSubtractorGMG(fgbg_GMG, frame, i, export_frames=False):
@@ -216,6 +215,6 @@ def BackgroundSubtractorGMG(fgbg_GMG, frame, i, export_frames=False):
     fgmask = fgbg_GMG.apply(frame)
     fgmask = cv2.morphologyEx(fgmask, cv2.MORPH_OPEN, kernel)
     if export_frames:
-        fgmask = cv2.resize(fgmask, (0, 0), fx=0.3, fy=0.3)
-        cv2.imwrite('output_frames/GMG/frame_{:04d}.jpg'.format(i), fgmask)
+        fgmask_out = cv2.resize(fgmask, (0, 0), fx=0.3, fy=0.3)
+        cv2.imwrite('output_frames/GMG/frame_{:04d}.png'.format(i), fgmask_out.astype('uint8') * 255)
     return fgmask

@@ -17,6 +17,7 @@ roi_path = '../datasets/AICity_data/train/S03/c010/roi.jpg'
 # colorspace can be: None, HSV
 colorspace = None
 ALPHAS = [0, 0.5, 1., 1.5, 2., 2.5, 3., 3.5, 4.]
+ALPHAS = [2., 2.5, 3.]
 RHOS = [0.25, 0.5, 0.75, 1.]
 
 def hyperparameter_search(groundtruth_list):
@@ -74,10 +75,10 @@ def grid_search():
 
 if __name__ == "__main__":
 
-    export_frames = False
-    best_pairs = False
+    export_frames = True
+    find_best_pairs = False
     adaptive = False
-    use_detections_pkl = False
+    use_detections_pkl = True
     detections = []
 
     # Read groundtruth
@@ -85,7 +86,8 @@ if __name__ == "__main__":
     groundtruth_list = read_annotations_file(groundtruth_path, video_path)          # gt.txt
 
     # Search best alpha and rho
-    if best_pairs:
+    if find_best_pairs:
+        print("Computing best alpha and rho")
         hyperparameter_search(groundtruth_list)
 
     # Check colorspace
@@ -93,7 +95,7 @@ if __name__ == "__main__":
         if colorspace.lower() == "hsv":
             print("hsv")
             # Load detections
-            if os.path.exists('detections_h.pkl') and use_detections_pkl:
+            if use_detections_pkl and os.path.exists('detections_h.pkl'):
                 with open('detections_h.pkl', 'rb') as p:
                     detections = pickle.load(p)
             else:
@@ -102,7 +104,7 @@ if __name__ == "__main__":
                 detections = single_gaussian_model(roi_path, video_path, alpha=1.25, rho=1, adaptive=adaptive, export_frames=export_frames, only_h=True)
     else:
         # Load detections
-        if os.path.exists('detections.pkl') and use_detections_pkl:
+        if use_detections_pkl and os.path.exists('detections.pkl'):
             with open('detections.pkl', 'rb') as p:
                 detections = pickle.load(p)
         else:
@@ -110,7 +112,7 @@ if __name__ == "__main__":
             # This function lasts about 10 minutes
             detections = single_gaussian_model(roi_path, video_path, alpha=2.5, rho=1, adaptive=adaptive, export_frames=export_frames)
         #print(len(detections))
-        plot_bboxes(video_path, groundtruth_list, detections)
+        #plot_bboxes(video_path, groundtruth_list, detections)
 
     print('Compute mAP@0.5')
     gt_filtered = [x for x in groundtruth_list if x.frame > int(2141*0.25)]         # filter 25% of gt

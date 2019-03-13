@@ -7,7 +7,7 @@ import matplotlib.patches as mpatches
 from utils.detection import Detection
 
 
-def candidate_generation_window_ccl(n_frame, mask, min_h, max_h, min_w, max_w, min_ratio, max_ratio):
+def candidate_generation_window_ccl(n_frame, mask, min_h=80, max_h=500, min_w=100, max_w=600, min_ratio=0.2, max_ratio=1.30):
     label_image = label(mask)
     regions = regionprops(label_image)
 
@@ -35,8 +35,8 @@ def filter_connected_components(bbox, min_h, max_h, min_w, max_w, min_ratio, max
 
 
 def visualize_boxes(pixel_candidates, gt_candidate, detection_candidate):
-    fig, ax = plt.subplots(figsize=(10, 6))
-    ax.imshow(pixel_candidates)
+    fig, ax = plt.subplots()
+    ax.imshow(pixel_candidates, cmap='gray')
     for candidate in gt_candidate:
         minc, minr, maxc, maxr = candidate
         rect = mpatches.Rectangle((minc, minr), maxc-minc+1, maxr-minr+1, fill=False, edgecolor='green', linewidth=2)
