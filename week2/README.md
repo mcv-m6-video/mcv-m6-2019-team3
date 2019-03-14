@@ -1,10 +1,10 @@
 # M6 Project: Video Surveillance for Road Traffic Monitoring
 
+## Week 2: Background Subtraction
+
 <div align="center">
   <img src="https://github.com/mcv-m6-video/mcv-m6-2019-team3/blob/master/week2/images/demo.gif">
 </div>
-
-## Week 2
 
 To run the project
 ```
