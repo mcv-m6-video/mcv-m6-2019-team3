@@ -81,7 +81,7 @@ def read_annotations(annotation_path, video_path):
     return ground_truths
 
 
-def read_annotations_from_txt(gt_path, analyze=True):
+def read_annotations_from_txt(gt_path, analyze=False):
     """
     Read annotations from the txt files
     Arguments:

@@ -65,13 +65,12 @@ def visualize_tracks(image, frame_tracks, colors):
 
 
 def track_objects(video_path, detections_list, display = True):
-    colors = np.random.rand(100, 3)  # used only for display
+    colors = np.random.rand(500, 3)  # used only for display
     tracks = []
     max_track = 0
 
     capture = cv2.VideoCapture(video_path)
     n_frame = 0
-
 
     while capture.isOpened():
         valid, image = capture.read()
