@@ -138,6 +138,7 @@ def single_gaussian_model(roi_path, video_path, alpha, rho, adaptive=False, expo
 ########### State-of-the-art methods
 ############################################
 
+
 def BackgroundSubtractor(video_path, export_frames=False):
     capture = cv2.VideoCapture(video_path)
 
