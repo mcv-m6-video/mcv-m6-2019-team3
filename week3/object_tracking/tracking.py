@@ -7,41 +7,43 @@ from utils.track import Track
 from evaluation.bbox_iou import bbox_iou
 
 
-def obtain_new_tracks(tracks, unused_bboxes, max_track, frame_tracks):
-    for bbox in unused_bboxes:
-        tracks.append(Track(max_track+1, [bbox], 0, 1, 1))
-        frame_tracks[max_track+1] = bbox
+def obtain_new_tracks(tracks, unused_detections, max_track, frame_tracks):
+    for detection in unused_detections:
+        tracks.append(Track(max_track+1, [detection], 0, 1, 1))
+        frame_tracks[max_track+1] = detection.bbox
 
         max_track += 1
 
     return tracks, max_track, frame_tracks
 
 
-def update_tracks(tracks, detections_bboxes, frame_tracks):
-    unused_detections_bboxes = detections_bboxes
+def update_tracks(tracks, detections, frame_tracks):
+    unused_detections = detections
     for track in tracks:
         if track.time_since_update < 5:
-            last_bbox = track.bboxes[-1]
-            match_bbox = match_next_bbox(last_bbox, unused_detections_bboxes)
-            if match_bbox is not None:
-                unused_detections_bboxes.remove(match_bbox)
-                track.bboxes.append(match_bbox)
-                frame_tracks[track.id] = match_bbox
+            last_bbox = track.detections[-1].bbox
+            match_detection = match_next_bbox(last_bbox, unused_detections)
+            if match_detection is not None:
+                unused_detections.remove(match_detection)
+                track.detections.append(match_detection)
+                frame_tracks[track.id] = match_detection.bbox
                 track.hits +=1
+                track.time_since_update = 0
                 if track.time_since_update == 0:
                     track.hit_streak += 1
             else:
                 track.time_since_update += 1
-    return tracks, unused_detections_bboxes, frame_tracks
+                track.hit_streak = 0
+    return tracks, unused_detections, frame_tracks
 
 
-def match_next_bbox(last_bbox, unused_detections_bboxes):
+def match_next_bbox(last_bbox, unused_detections):
     highest_IoU = 0
-    for detection_bbox in unused_detections_bboxes:
-        IoU = bbox_iou(last_bbox, detection_bbox)
+    for detection in unused_detections:
+        IoU = bbox_iou(last_bbox, detection.bbox)
         if IoU > highest_IoU:
             highest_IoU = IoU
-            best_match = detection_bbox
+            best_match = detection
 
     if highest_IoU > 0:
         return best_match
@@ -63,7 +65,6 @@ def visualize_tracks(image, frame_tracks, colors):
     plt.show()
 
 
-
 def track_objects(video_path, detections_list, display = True):
     colors = np.random.rand(500, 3)  # used only for display
     tracks = []
@@ -72,7 +73,7 @@ def track_objects(video_path, detections_list, display = True):
     capture = cv2.VideoCapture(video_path)
     n_frame = 0
 
-    while capture.isOpened():
+    while capture.isOpened() and n_frame < 1000:
         valid, image = capture.read()
         if not valid:
             break
@@ -81,8 +82,8 @@ def track_objects(video_path, detections_list, display = True):
         detections_on_frame = [x for x in detections_list if x.frame == n_frame]
         detections_bboxes = [o.bbox for o in detections_on_frame]
 
-        tracks, unused_bboxes, frame_tracks = update_tracks(tracks, detections_bboxes, frame_tracks)
-        tracks, max_track, frame_tracks = obtain_new_tracks(tracks, unused_bboxes, max_track, frame_tracks)
+        tracks, unused_detections, frame_tracks = update_tracks(tracks, detections_on_frame, frame_tracks)
+        tracks, max_track, frame_tracks = obtain_new_tracks(tracks, unused_detections, max_track, frame_tracks)
 
         if display and n_frame%10==0:
             visualize_tracks(image, frame_tracks, colors)
