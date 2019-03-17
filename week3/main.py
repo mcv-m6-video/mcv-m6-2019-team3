@@ -2,6 +2,8 @@ import os
 import pickle
 import numpy as np
 
+from evaluation.evaluation_funcs import compute_mAP_track
+from utils.reading import read_annotations_file
 from evaluation.evaluation_funcs import compute_mAP
 from object_tracking.tracking import track_objects
 from utils.candidate_generation_window import plot_bboxes
@@ -32,7 +34,7 @@ if __name__ == '__main__':
             print("Reading detections from groundtruth.pkl")
             groundtruth_list = pickle.load(p)
     else:
-        groundtruth_list = read_annotations_file(groundtruth_xml_path, video_path)
+        groundtruth_list, tracks_gt_list = read_annotations_file(groundtruth_xml_path, video_path)
         with open('groundtruth.pkl', 'wb') as f:
             pickle.dump(groundtruth_list, f)
 
@@ -49,11 +51,11 @@ if __name__ == '__main__':
     #plot_bboxes(video_path, groundtruth_list, detections_list, export_frames=export_frames)
 
     # Task 2
-    #tracks = track_objects(video_path, groundtruth_list)
-    tracks = track_objects(video_path, detections_list, display=display_frames, export_frames=export_frames)
+    tracks = track_objects(video_path, detections_list, groundtruth_list, display=display_frames, export_frames=export_frames)
+    # compute_mAP_track(tracks_gt_list, tracks)
 
     #Read detections files
     #for detector in detectors:
         #print(detector)
         #detections_list = read_annotations_file(detections_path + detector, video_path)
-        #tracks = track_objects(video_path, detections_list, display=display_frames, export_frames=export_frames)
+        #tracks = track_objects(video_path, detections_list, groundtruth_list, display=display_frames, export_frames=export_frames)

@@ -4,6 +4,7 @@ import xml.etree.ElementTree as ET
 from tqdm import tqdm
 
 from utils.detection import Detection
+from utils.track import Track
 
 
 def read_detections(path: str):
@@ -37,6 +38,7 @@ def read_annotations(annotation_path, video_path):
     root = ET.parse(annotation_path).getroot()
 
     ground_truths = []
+    tracks = []
     images = []
     num = 0
 
@@ -52,7 +54,7 @@ def read_annotations(annotation_path, video_path):
 
         images.append(image)
         for track in root.findall('track'):
-            #gt_id = track.attrib['id']
+            gt_id = track.attrib['id']
             label = track.attrib['label']
             box = track.find("box[@frame='{0}']".format(str(num)))
 
@@ -70,9 +72,14 @@ def read_annotations(annotation_path, video_path):
                 ytl = int(float(box.attrib['ytl']))
                 xbr = int(float(box.attrib['xbr']))
                 ybr = int(float(box.attrib['ybr']))
-                ground_truths.append(Detection(frame, label, xtl, ytl, xbr - xtl + 1, ybr - ytl + 1, 1))
+                ground_truths.append(Detection(frame, label, xtl, ytl, xbr - xtl + 1, ybr - ytl + 1, 1, gt_id))
                 #ground_truths.append(Detection(frame, label, xtl, ytl, xbr, ybr, 1))
-
+                track_corresponding = [t for t in tracks if t.id == gt_id]
+                if len(track_corresponding) > 0:
+                    track_corresponding[0].detections.append(Detection(frame, label, xtl, ytl, xbr - xtl + 1, ybr - ytl + 1, 1))
+                else:
+                    track_corresponding = Track(gt_id, [Detection(frame, label, xtl, ytl, xbr - xtl + 1, ybr - ytl + 1, 1)])
+                    tracks.append(track_corresponding)
         pbar.update(1)
         num += 1
 
@@ -80,7 +87,7 @@ def read_annotations(annotation_path, video_path):
 
     # print(ground_truths)
     capture.release()
-    return ground_truths
+    return ground_truths, tracks
 
 
 def read_annotations_from_txt(gt_path, analyze=False):
