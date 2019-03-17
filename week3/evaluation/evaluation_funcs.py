@@ -107,7 +107,8 @@ def compute_mAP(groundtruth_list_original, detections_list, IoU_threshold=0.5):
 
         # Save metrics
         precision.append(TP/(TP+FP))
-        recall.append(TP/groundtruth_size)
+        if groundtruth_size:
+            recall.append(TP/groundtruth_size)
 
     for n, r in enumerate(reversed(recall)):
         if((r < threshold) or n == len(precision)-1):
@@ -163,6 +164,20 @@ def compute_mAP(groundtruth_list_original, detections_list, IoU_threshold=0.5):
     mAP = sum(max_precision_per_step)/11
     print("mAP: {}\n".format(mAP))
     return precision, recall, max_precision_per_step, F1_score, mAP
+
+
+def compute_mAP_track(groundtruth_tracks, detections_tracks, IoU_threshold=0.5):
+    for detection_track in detections_tracks:
+        print('DETECTION')
+        print(detection_track)
+        for groundtruth_track in groundtruth_tracks:
+            #print(groundtruth_track)
+            precision, recall, max_precision_per_step, F1_score, mAP = compute_mAP(groundtruth_track.detections,
+                                                                                   detection_track.detections,
+                                                                                   IoU_threshold)
+            print(mAP)
+            if(mAP > 0):
+                print(groundtruth_track)
 
 
 def plot_precision_recall_curve(precision, recall, max_precision_per_step, title="plot", title2=""):

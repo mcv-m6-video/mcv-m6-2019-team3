@@ -2,6 +2,7 @@ import os
 import pickle
 import numpy as np
 
+from evaluation.evaluation_funcs import compute_mAP_track
 from utils.reading import read_annotations_file
 from object_tracking.tracking import track_objects
 
@@ -17,8 +18,9 @@ if __name__ == '__main__':
 
     # Read groundtruth
     print("Getting groundtruth")
-    groundtruth_list = read_annotations_file(groundtruth_xml_path, video_path)
+    groundtruth_list, tracks_gt_list = read_annotations_file(groundtruth_xml_path, video_path)
     tracks = track_objects(video_path, groundtruth_list)
+    compute_mAP_track(tracks_gt_list, tracks)
 
     #Read detections files
     for detector in detectors:

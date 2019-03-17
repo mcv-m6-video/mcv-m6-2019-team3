@@ -1,5 +1,5 @@
 class Track(object):
-    def __init__(self, id, detections, time_since_update, hits, hit_streak):
+    def __init__(self, id, detections, time_since_update=0, hits=0, hit_streak=0):
         self.id = id
         self.detections = detections
         self.time_since_update = time_since_update
