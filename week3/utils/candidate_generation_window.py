@@ -37,14 +37,15 @@ def filter_connected_components(bbox, min_h, max_h, min_w, max_w, min_ratio, max
 def visualize_boxes(pixel_candidates, gt_candidate, detection_candidate):
     fig, ax = plt.subplots()
     ax.imshow(pixel_candidates, cmap='gray')
-    for candidate in gt_candidate:
-        minc, minr, maxc, maxr = candidate
-        rect = mpatches.Rectangle((minc, minr), maxc-minc+1, maxr-minr+1, fill=False, edgecolor='green', linewidth=2)
-        ax.add_patch(rect)
 
     for candidate in detection_candidate:
         minc, minr, maxc, maxr = candidate
-        rect = mpatches.Rectangle((minc, minr), maxc-minc+1, maxr-minr+1, fill=False, edgecolor='red', linewidth=2)
+        rect = mpatches.Rectangle((minc, minr), maxc - minc + 1, maxr - minr + 1, fill=False, edgecolor='red',
+                                  linewidth=2)
+        ax.add_patch(rect)
+    for candidate in gt_candidate:
+        minc, minr, maxc, maxr = candidate
+        rect = mpatches.Rectangle((minc, minr), maxc-minc+1, maxr-minr+1, fill=False, edgecolor='green', linewidth=2)
         ax.add_patch(rect)
 
     plt.show()
