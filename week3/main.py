@@ -21,8 +21,8 @@ roi_path = '../datasets/AICity_data/train/S03/c010/roi.jpg'
 mask_detections_path = "../annotations/Mask-RCNN-detections.txt"
 
 if __name__ == '__main__':
-    export_frames = True
     use_pkl = True
+    export_frames = False
 
     # Read groundtruth
     print("Getting groundtruth")
@@ -35,7 +35,7 @@ if __name__ == '__main__':
         with open('groundtruth.pkl', 'wb') as f:
             pickle.dump(groundtruth_list, f)
 
-    # Read Mask-RCNN detections
+    # Read Mask-RCNN detections from Task 1
     print("\nGetting detections")
     detections_list = read_annotations_file(mask_detections_path, video_path)
 
@@ -44,8 +44,8 @@ if __name__ == '__main__':
     compute_mAP(groundtruth_list, detections_list)
 
     # Print bboxes
-    print("\nExporting frames")
-    plot_bboxes(video_path, groundtruth_list, detections_list, export_frames=export_frames)
+    #print("\nExporting frames")
+    #plot_bboxes(video_path, groundtruth_list, detections_list, export_frames=export_frames)
 
     # Task 2
     #tracks = track_objects(video_path, groundtruth_list)
