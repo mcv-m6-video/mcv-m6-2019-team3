@@ -1,5 +1,5 @@
 class Detection(object):
-    def __init__(self, frame, label, xtl, ytl, width, height, confidence=1):
+    def __init__(self, frame, label, xtl, ytl, width, height, confidence=1, track_id=None):
         self.frame = frame
         self.label = label
         self.xtl = xtl
@@ -8,6 +8,7 @@ class Detection(object):
         self.height = height
         self.confidence = confidence
         self.bbox = [xtl, ytl, xtl+width, ytl+height]
+        self.track_id = track_id
 
     def __repr__(self):
         return self.__str__()

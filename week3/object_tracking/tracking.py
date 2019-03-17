@@ -103,10 +103,12 @@ def visualize_tracks(image, frame_tracks, colors):
     plt.show()
 
 
-def track_objects(video_path, detections_list, display = False):
+def track_objects(video_path, detections_list, gt_list, display = False):
     colors = np.random.rand(500, 3)  # used only for display
     tracks = []
     max_track = 0
+
+    acc = mm.MOTAccumulator(auto_id=True)
 
     capture = cv2.VideoCapture(video_path)
     n_frame = 0
@@ -118,7 +120,7 @@ def track_objects(video_path, detections_list, display = False):
         frame_tracks = {}
 
         detections_on_frame = [x for x in detections_list if x.frame == n_frame]
-        detections_bboxes = [o.bbox for o in detections_on_frame]
+        gt_on_frame = [x for x in gt_list if x.frame == n_frame]
 
         tracks, unused_detections, frame_tracks = update_tracks(image, tracks, detections_on_frame, frame_tracks)
         tracks, max_track, frame_tracks = obtain_new_tracks(tracks, unused_detections, max_track, frame_tracks)
@@ -126,8 +128,33 @@ def track_objects(video_path, detections_list, display = False):
         if display and n_frame%10==0:
             visualize_tracks(image, frame_tracks, colors)
 
+        # IDF1 computing
+
+        detec_bboxes = []
+        detec_ids = []
+        for key, value in frame_tracks.items():
+            detec_ids.append(key)
+            detec_bboxes.append(value)
+
+        gt_bboxes = []
+        gt_ids = []
+        for gt in gt_on_frame:
+            gt_bboxes.append(gt.bbox)
+            gt_ids.append(gt.track_id)
+
+        mm_gt_bboxes = [[(bbox[0]+bbox[2])/2, (bbox[1]+bbox[3])/2, bbox[2]-bbox[0], bbox[3]-bbox[1]] for bbox in gt_bboxes]
+        mm_detec_bboxes = [[(bbox[0]+bbox[2])/2, (bbox[1]+bbox[3])/2, bbox[2] - bbox[0], bbox[3] - bbox[1]] for bbox in detec_bboxes]
+
+        distances_gt_det = mm.distances.iou_matrix(mm_gt_bboxes, mm_detec_bboxes, max_iou=1.)
+        acc.update(gt_ids, detec_ids, distances_gt_det)
+
         n_frame += 1
     capture.release()
     cv2.destroyAllWindows()
+
+    print(acc.mot_events)
+    mh = mm.metrics.create()
+    summary = mh.compute(acc, metrics=mm.metrics.motchallenge_metrics, name='acc')
+    print(summary)
 
     return tracks

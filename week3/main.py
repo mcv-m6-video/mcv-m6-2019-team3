@@ -19,11 +19,11 @@ if __name__ == '__main__':
     # Read groundtruth
     print("Getting groundtruth")
     groundtruth_list, tracks_gt_list = read_annotations_file(groundtruth_xml_path, video_path)
-    tracks = track_objects(video_path, groundtruth_list)
-    compute_mAP_track(tracks_gt_list, tracks)
+    tracks = track_objects(video_path, groundtruth_list, groundtruth_list)
+    #compute_mAP_track(tracks_gt_list, tracks)
 
     #Read detections files
     for detector in detectors:
         print(detector)
         detections_list = read_annotations_file(detections_path + detector, video_path)
-        tracks = track_objects(video_path, detections_list)
+        tracks = track_objects(video_path, detections_list, groundtruth_list)

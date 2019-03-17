@@ -70,7 +70,7 @@ def read_annotations(annotation_path, video_path):
                 ytl = int(float(box.attrib['ytl']))
                 xbr = int(float(box.attrib['xbr']))
                 ybr = int(float(box.attrib['ybr']))
-                ground_truths.append(Detection(frame, label, xtl, ytl, xbr - xtl + 1, ybr - ytl + 1, 1))
+                ground_truths.append(Detection(frame, label, xtl, ytl, xbr - xtl + 1, ybr - ytl + 1, 1, gt_id))
                 #ground_truths.append(Detection(frame, label, xtl, ytl, xbr, ybr, 1))
                 track_corresponding = [t for t in tracks if t.id == gt_id]
                 if len(track_corresponding) > 0:
