@@ -1,12 +1,13 @@
 import cv2
-from matplotlib import pyplot as plt
 import numpy as np
+from matplotlib import pyplot as plt
 import matplotlib.patches as mpatches
 import motmetrics as mm
+from tqdm import tqdm
 
+from evaluation.bbox_iou import bbox_iou
 from utils.track import Track
 from utils.detection import Detection
-from evaluation.bbox_iou import bbox_iou
 
 
 def obtain_new_tracks(tracks, unused_detections, max_track, frame_tracks):
@@ -89,27 +90,31 @@ def match_next_bbox(last_bbox, unused_detections):
         return None
 
 
-def visualize_tracks(image, frame_tracks, colors):
+def visualize_tracks(image, frame_tracks, colors, display=False, export_frames=False, export_path="test.png"):
     fig, ax = plt.subplots()
     ax.imshow(image, cmap='gray')
 
     for id in frame_tracks.keys():
         bbox = frame_tracks[id]
         minc, minr, maxc, maxr = bbox
-        rect = mpatches.Rectangle((minc, minr), maxc - minc + 1, maxr - minr + 1, fill=False, edgecolor=colors[id],
-                                  linewidth=2)
+        rect = mpatches.Rectangle((minc, minr), maxc - minc + 1, maxr - minr + 1, fill=False, edgecolor=colors[id], linewidth=2)
         ax.add_patch(rect)
 
-    plt.show()
+    if display:
+        plt.show()
+
+    if export_frames:
+        plt.savefig(export_path)
 
 
-def track_objects(video_path, detections_list, display = False):
+def track_objects(video_path, detections_list, display = False, export_frames = False):
     colors = np.random.rand(500, 3)  # used only for display
     tracks = []
     max_track = 0
 
     capture = cv2.VideoCapture(video_path)
     n_frame = 0
+    pbar = tqdm(total=2140)
 
     while capture.isOpened():
         valid, image = capture.read()
@@ -124,9 +129,16 @@ def track_objects(video_path, detections_list, display = False):
         tracks, max_track, frame_tracks = obtain_new_tracks(tracks, unused_detections, max_track, frame_tracks)
 
         if display and n_frame%10==0:
-            visualize_tracks(image, frame_tracks, colors)
+            visualize_tracks(image, frame_tracks, colors, display=display)
 
+        if export_frames:
+            visualize_tracks(image, frame_tracks, colors, export_frames=export_frames,
+                             export_path="output_frames/tracking/frames_{:04d}.png".format(n_frame))
+
+        pbar.update(1)
         n_frame += 1
+
+    pbar.close()
     capture.release()
     cv2.destroyAllWindows()
 

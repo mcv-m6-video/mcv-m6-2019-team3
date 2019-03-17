@@ -51,8 +51,6 @@ def visualize_boxes(pixel_candidates, gt_candidate, detection_candidate):
 
     #plt.show()
 
-    return fig
-
 def visualize_boxes_opencv(image, gt_candidate, detection_candidate):
 
     for candidate in detection_candidate:

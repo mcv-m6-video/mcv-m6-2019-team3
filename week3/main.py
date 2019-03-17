@@ -22,7 +22,8 @@ mask_detections_path = "../annotations/Mask-RCNN-detections.txt"
 
 if __name__ == '__main__':
     use_pkl = True
-    export_frames = False
+    display_frames = False
+    export_frames = True
 
     # Read groundtruth
     print("Getting groundtruth")
@@ -40,8 +41,8 @@ if __name__ == '__main__':
     detections_list = read_annotations_file(mask_detections_path, video_path)
 
     # Compute mAP
-    print("\nComputing mAP")
-    compute_mAP(groundtruth_list, detections_list)
+    #print("\nComputing mAP")
+    #compute_mAP(groundtruth_list, detections_list)
 
     # Print bboxes
     #print("\nExporting frames")
@@ -49,9 +50,10 @@ if __name__ == '__main__':
 
     # Task 2
     #tracks = track_objects(video_path, groundtruth_list)
+    tracks = track_objects(video_path, detections_list, display=display_frames, export_frames=export_frames)
 
     #Read detections files
     #for detector in detectors:
-    #    print(detector)
-    #    detections_list = read_annotations_file(detections_path + detector, video_path)
-    #    tracks = track_objects(video_path, detections_list)
+        #print(detector)
+        #detections_list = read_annotations_file(detections_path + detector, video_path)
+        #tracks = track_objects(video_path, detections_list, display=display_frames, export_frames=export_frames)
