@@ -16,9 +16,9 @@ detectors = ["det_ssd512.txt", "det_mask_rcnn.txt", "det_yolo3.txt"]
 if __name__ == '__main__':
 
     # Read groundtruth
-    #print("Getting groundtruth")
-    #groundtruth_list = read_annotations_file(groundtruth_xml_path, video_path)
-    #tracks = track_objects(video_path, groundtruth_list)
+    print("Getting groundtruth")
+    groundtruth_list = read_annotations_file(groundtruth_xml_path, video_path)
+    tracks = track_objects(video_path, groundtruth_list)
 
     #Read detections files
     for detector in detectors:
