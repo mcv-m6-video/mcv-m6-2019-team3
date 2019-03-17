@@ -111,18 +111,21 @@ def compute_mAP(groundtruth_list_original, detections_list, IoU_threshold=0.5):
             recall.append(TP/groundtruth_size)
 
     for n, r in enumerate(reversed(recall)):
-        if((r < threshold) or n == len(precision)-1):
-            if (r > threshold-0.1):
+        if r < threshold or n == len(precision)-1:
+            if r > threshold-0.1:
                 #print(n)
                 #print(r)
                 if n > 0:
                     max_precision_per_step.append(max(precision[-n:]))
                 else:
-                    max_precision_per_step.append(precision[len(precision)-1])
+                    #max_precision_per_step.append(precision[len(precision)-1])
+                    max_precision_per_step.append(0)
                 threshold -= 0.1
             else:
                 max_precision_per_step.append(0)
                 threshold -= 0.1
+
+    #plot_precision_recall_curve(precision, recall, max_precision_per_step)
 
     # Check false negatives
     groups = defaultdict(list)
@@ -163,8 +166,8 @@ def compute_mAP(groundtruth_list_original, detections_list, IoU_threshold=0.5):
     #print(max_precision_per_step)
     mAP = sum(max_precision_per_step)/11
     print("mAP: {}\n".format(mAP))
-    return precision, recall, max_precision_per_step, F1_score, mAP
 
+    return precision, recall, max_precision_per_step, F1_score, mAP
 
 def compute_mAP_track(groundtruth_tracks, detections_tracks, IoU_threshold=0.5):
     for detection_track in detections_tracks:
@@ -186,6 +189,8 @@ def plot_precision_recall_curve(precision, recall, max_precision_per_step, title
 
     # Data for plotting
     fig, ax = plt.subplots()
+    #len(recall)
+    #len(precision)
     ax.plot(recall, precision)
     ax.plot(thresholds, max_precision_per_step, 'ro')
 
@@ -195,7 +200,7 @@ def plot_precision_recall_curve(precision, recall, max_precision_per_step, title
     ax.set_ylim([-0.1, 1.1])
     ax.grid()
 
-    fig.savefig("plots/precision-recall-" + title + title2 + ".png")
+    fig.savefig("precision-recall-" + title + title2 + ".png")
     # plt.show()
 
 

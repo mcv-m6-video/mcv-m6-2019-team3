@@ -57,13 +57,15 @@ def read_annotations(annotation_path, video_path):
             gt_id = track.attrib['id']
             label = track.attrib['label']
             box = track.find("box[@frame='{0}']".format(str(num)))
-            if box is not None and (label == 'car' or label == 'bike'):
+
+            #if box is not None and (label == 'car' or label == 'bike'):
+            if box is not None and label == 'car':
 
                 if box.attrib['occluded'] == '1':
                     continue
 
-                if label == 'car' and box[0].text == 'true':                # Check parked
-                    continue
+                #if label == 'car' and box[0].text == 'true':                # Discard parked cars
+                #    continue
 
                 frame = int(box.attrib['frame'])
                 xtl = int(float(box.attrib['xtl']))
@@ -106,7 +108,7 @@ def read_annotations_from_txt(gt_path, analyze=False):
     with open(gt_path) as f:
         for line in f:
             data = line.split(',')
-            ground_truths_list.append(Detection(int(data[0]), 'car', int(float(data[2])), int(float(data[3])), int(float(data[4])), int(float(data[5])),float(data[6])))
+            ground_truths_list.append(Detection(int(data[0])-1, 'car', int(float(data[2])), int(float(data[3])), int(float(data[4])), int(float(data[5])),float(data[6])))
 
             if analyze:
                 if int(data[4]) < min_w: min_w = int(data[4])

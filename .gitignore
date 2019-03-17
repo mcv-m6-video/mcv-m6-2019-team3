@@ -1,6 +1,6 @@
 *.avi
 *.zip
-*.ipynb
+*/Untitled.ipynb
 week1/plots/
 week1/frames_out/
 week1/frames/
