@@ -101,7 +101,7 @@ def read_annotations_from_txt(gt_path, analyze=False):
     with open(gt_path) as f:
         for line in f:
             data = line.split(',')
-            ground_truths_list.append(Detection(int(data[0]), 'car', int(float(data[2])), int(float(data[3])), int(float(data[4])), int(float(data[5])),float(data[6])))
+            ground_truths_list.append(Detection(int(data[0])-1, 'car', int(float(data[2])), int(float(data[3])), int(float(data[4])), int(float(data[5])),float(data[6])))
 
             if analyze:
                 if int(data[4]) < min_w: min_w = int(data[4])
