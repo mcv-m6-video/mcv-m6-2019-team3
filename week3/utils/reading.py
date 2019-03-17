@@ -59,8 +59,8 @@ def read_annotations(annotation_path, video_path):
             #if box is not None and (label == 'car' or label == 'bike'):
             if box is not None and label == 'car':
 
-                #if box.attrib['occluded'] == '1':
-                #    continue
+                if box.attrib['occluded'] == '1':
+                    continue
 
                 #if label == 'car' and box[0].text == 'true':                # Discard parked cars
                 #    continue
