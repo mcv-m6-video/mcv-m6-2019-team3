@@ -3,11 +3,11 @@ from copy import deepcopy
 
 import cv2
 import numpy as np
-import matplotlib.pyplot as plt
 from collections import defaultdict
+import matplotlib.pyplot as plt
 
 from evaluation.bbox_iou import bbox_iou
-
+from utils.plotting import plot_precision_recall_curve, plot_multiple_precision_recall_curves
 
 def compute_IoU(video_path, groundtruth_list, detections_list):
 
@@ -59,7 +59,6 @@ def compute_IoU(video_path, groundtruth_list, detections_list):
     print("F1={}".format(F1_score))
     return IoUFrames, F1_frames
 
-
 def compute_mAP(groundtruth_list_original, detections_list, IoU_threshold=0.5):
 
     groundtruth_list = deepcopy(groundtruth_list_original)
@@ -75,8 +74,6 @@ def compute_mAP(groundtruth_list_original, detections_list, IoU_threshold=0.5):
     # to compute mAP
     max_precision_per_step = list()
     threshold = 1; checkpoint = 0
-    #print(groundtruth_size)
-    #print(len(detections_list))
     temp = 1000
 
     for n, detection in enumerate(detections_list):
@@ -103,7 +100,6 @@ def compute_mAP(groundtruth_list_original, detections_list, IoU_threshold=0.5):
 
         if match_flag == False:
             FP += 1
-        match_flag = False
 
         # Save metrics
         precision.append(TP/(TP+FP))
@@ -113,8 +109,7 @@ def compute_mAP(groundtruth_list_original, detections_list, IoU_threshold=0.5):
     for n, r in enumerate(reversed(recall)):
         if r < threshold or n == len(precision)-1:
             if r > threshold-0.1:
-                #print(n)
-                #print(r)
+                #print(n), print(r)
                 if n > 0:
                     max_precision_per_step.append(max(precision[-n:]))
                 else:
@@ -140,19 +135,10 @@ def compute_mAP(groundtruth_list_original, detections_list, IoU_threshold=0.5):
         groundtruth_bboxes = [o.bbox for o in groundtruth]
 
         TP_temp, FN_temp, FP_temp = performance_accumulation_window(detection_bboxes, groundtruth_bboxes)
-        #print(detection_bboxes)
-        #print(groundtruth_bboxes)
-        #print("TP={} FN={} FP={}".format(TP_temp, FN_temp, FP_temp))
-
-        #FP += FP_temp
         FN += FN_temp
-        #if (TP_temp > len(groundtruth_bboxes)):
-        #    TP += 1
-        #    FP += TP_temp - len(groundtruth_bboxes)
-        #else:
-        #    TP += 1
 
     print("TP={} FN={} FP={}".format(TP, FN, FP))
+
     recall = 0
     precision = 0
     F1_score = 0
@@ -165,7 +151,7 @@ def compute_mAP(groundtruth_list_original, detections_list, IoU_threshold=0.5):
     #print("recall:{}".format(recall))
     #print(max_precision_per_step)
     mAP = sum(max_precision_per_step)/11
-    print("mAP: {}\n".format(mAP))
+    print("mAP: {}".format(mAP))
 
     return precision, recall, max_precision_per_step, F1_score, mAP
 
@@ -181,40 +167,6 @@ def compute_mAP_track(groundtruth_tracks, detections_tracks, IoU_threshold=0.5):
             print(mAP)
             if(mAP > 0):
                 print(groundtruth_track)
-
-
-def plot_precision_recall_curve(precision, recall, max_precision_per_step, title="plot", title2=""):
-
-    thresholds = [1.0, 0.9, 0.8, 0.7, 0.6, 0.5, 0.4, 0.3, 0.2, 0.1, 0.0]
-
-    # Data for plotting
-    fig, ax = plt.subplots()
-    #len(recall)
-    #len(precision)
-    ax.plot(recall, precision)
-    ax.plot(thresholds, max_precision_per_step, 'ro')
-
-    ax.set(xlabel='Recall', ylabel='Precision',
-           title='Precision-Recall Curve')
-    ax.set_xlim([-0.1, 1.1])
-    ax.set_ylim([-0.1, 1.1])
-    ax.grid()
-
-    fig.savefig("precision-recall-" + title + title2 + ".png")
-    # plt.show()
-
-
-def plot_multiple_precision_recall_curves(groundtruth_list, detections_list, thresholds, detector):
-    fig, ax = plt.subplots()
-    for th in thresholds:
-        precision, recall = compute_mAP(groundtruth_list, detections_list, IoU_threshold=th)
-        ax.plot(recall, precision, label="threshold: %.2f" % th)
-    ax.set(xlabel='Recall', ylabel='Precision',
-           title='Precision-Recall Curve')
-    ax.grid()
-    ax.legend(loc='best')
-
-    fig.savefig("plots/precision-recall-thresholds" + detector + ".png")
 
 
 def performance_accumulation_window(detections, annotations):

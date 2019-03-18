@@ -1,12 +1,9 @@
 import os
 import pickle
-import numpy as np
 
-from evaluation.evaluation_funcs import compute_mAP_track
-from utils.reading import read_annotations_file
-from evaluation.evaluation_funcs import compute_mAP
+from evaluation.evaluation_funcs import compute_mAP, compute_mAP_track
 from object_tracking.tracking import track_objects
-from utils.candidate_generation_window import plot_bboxes
+from utils.plotting import draw_video_bboxes
 from utils.reading import read_annotations_file
 
 # Groundtruth
@@ -21,41 +18,47 @@ roi_path = '../datasets/AICity_data/train/S03/c010/roi.jpg'
 
 # Own detections
 mask_detections_path = "../annotations/Mask-RCNN-detections.txt"
+#mask_fine_tuned_detections_path = ""
 
 if __name__ == '__main__':
+    # Flags
     use_pkl = True
     display_frames = False
-    export_frames = True
+    export_frames = False
 
-    # Read groundtruth
+    # Load/Read groundtruth
     print("Getting groundtruth")
     if use_pkl and os.path.exists('groundtruth.pkl'):
         with open('groundtruth.pkl', 'rb') as p:
             print("Reading detections from groundtruth.pkl")
             groundtruth_list = pickle.load(p)
     else:
-        groundtruth_list, tracks_gt_list = read_annotations_file(groundtruth_xml_path, video_path)
+        groundtruth_list, tracks_gt_list = read_annotations_file(groundtruth_xml_path, video_path)  # Something is wrong, read_annotations_file only returns 1 value
         with open('groundtruth.pkl', 'wb') as f:
             pickle.dump(groundtruth_list, f)
 
-    # Read Mask-RCNN detections from Task 1
+    # Task 1.1: Mask-RCNN Off-the-shelf
+    # Read Mask-RCNN detections from file
     print("\nGetting detections")
     detections_list = read_annotations_file(mask_detections_path, video_path)
 
     # Compute mAP
-    #print("\nComputing mAP")
-    #compute_mAP(groundtruth_list, detections_list)
+    print("\nComputing mAP")
+    compute_mAP(groundtruth_list, detections_list)
 
-    # Print bboxes
+    # Export bboxes
     #print("\nExporting frames")
-    #plot_bboxes(video_path, groundtruth_list, detections_list, export_frames=export_frames)
+    #draw_video_bboxes(video_path, groundtruth_list, detections_list, export_frames=export_frames)
 
-    # Task 2
+    # Task 1.2
+    # ToDo: Read fine-tuned detections, compute mAP and export frames
+
+    # Task 2.1: Tracking by Overlap and Task 2.4: IDF1 for Multiple Object Tracking
+    print("\nComputing tracking by overlap")
     tracks = track_objects(video_path, detections_list, groundtruth_list, display=display_frames, export_frames=export_frames)
-    # compute_mAP_track(tracks_gt_list, tracks)
 
-    #Read detections files
-    #for detector in detectors:
-        #print(detector)
-        #detections_list = read_annotations_file(detections_path + detector, video_path)
-        #tracks = track_objects(video_path, detections_list, groundtruth_list, display=display_frames, export_frames=export_frames)
+    # Compute mAP
+    # compute_mAP_track(tracks_gt_list, tracks) # We don't have tracks_gt_list
+
+    # Task 2.2: Kalman filter
+    # ToDo

@@ -6,8 +6,9 @@ import motmetrics as mm
 from tqdm import tqdm
 
 from evaluation.bbox_iou import bbox_iou
-from utils.track import Track
 from utils.detection import Detection
+from utils.plotting import visualize_tracks, visualize_tracks_opencv
+from utils.track import Track
 
 
 def obtain_new_tracks(tracks, unused_detections, max_track, frame_tracks):
@@ -90,23 +91,8 @@ def match_next_bbox(last_bbox, unused_detections):
         return None
 
 
-def visualize_tracks(image, frame_tracks, colors, display=False, export_frames=False, export_path="test.png"):
-    fig, ax = plt.subplots()
-    ax.imshow(image, cmap='gray')
+def track_objects(video_path, detections_list, gt_list, display = False, export_frames = False):
 
-    for id in frame_tracks.keys():
-        bbox = frame_tracks[id]
-        minc, minr, maxc, maxr = bbox
-        rect = mpatches.Rectangle((minc, minr), maxc - minc + 1, maxr - minr + 1, fill=False, edgecolor=colors[id], linewidth=2)
-        ax.add_patch(rect)
-
-    if display:
-        plt.show()
-
-    if export_frames:
-        plt.savefig(export_path)
-
-def track_objects(video_path, detections_list, display = False, export_frames = False):
     colors = np.random.rand(500, 3)  # used only for display
     tracks = []
     max_track = 0
@@ -133,7 +119,7 @@ def track_objects(video_path, detections_list, display = False, export_frames = 
             visualize_tracks(image, frame_tracks, colors, display=display)
 
         if export_frames:
-            visualize_tracks(image, frame_tracks, colors, export_frames=export_frames,
+            visualize_tracks_opencv(image, frame_tracks, colors, export_frames=export_frames,
                              export_path="output_frames/tracking/frames_{:04d}.png".format(n_frame))
 
         # IDF1 computing

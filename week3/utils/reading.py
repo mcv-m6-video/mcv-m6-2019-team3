@@ -28,7 +28,7 @@ def read_detections(path: str):
     return frame_detections
 
 
-def read_annotations(annotation_path, video_path):
+def read_annotations_from_xml(annotation_path, video_path):
     """
     Arguments: 
     capture: frames from video, opened as cv2.VideoCapture
@@ -58,13 +58,13 @@ def read_annotations(annotation_path, video_path):
             label = track.attrib['label']
             box = track.find("box[@frame='{0}']".format(str(num)))
 
-            #if box is not None and (label == 'car' or label == 'bike'):
-            if box is not None and label == 'car':
+            #if box is not None and (label == 'car' or label == 'bike'):    # Read cars and bikes
+            if box is not None and label == 'car':                          # Read cars
 
-                if box.attrib['occluded'] == '1':
+                if box.attrib['occluded'] == '1':                           # Discard occluded
                     continue
 
-                #if label == 'car' and box[0].text == 'true':                # Discard parked cars
+                #if label == 'car' and box[0].text == 'true':               # Discard parked cars
                 #    continue
 
                 frame = int(box.attrib['frame'])
@@ -73,7 +73,6 @@ def read_annotations(annotation_path, video_path):
                 xbr = int(float(box.attrib['xbr']))
                 ybr = int(float(box.attrib['ybr']))
                 ground_truths.append(Detection(frame, label, xtl, ytl, xbr - xtl + 1, ybr - ytl + 1, 1, gt_id))
-                #ground_truths.append(Detection(frame, label, xtl, ytl, xbr, ybr, 1))
                 track_corresponding = [t for t in tracks if t.id == gt_id]
                 if len(track_corresponding) > 0:
                     track_corresponding[0].detections.append(Detection(frame, label, xtl, ytl, xbr - xtl + 1, ybr - ytl + 1, 1))
@@ -83,9 +82,8 @@ def read_annotations(annotation_path, video_path):
         pbar.update(1)
         num += 1
 
-    pbar.close()
-
     # print(ground_truths)
+    pbar.close()
     capture.release()
     return ground_truths, tracks
 
@@ -128,7 +126,7 @@ def read_annotations_file(gt_path, video_path):
     if (gt_path.endswith('.txt')):
         annotations_list = read_annotations_from_txt(gt_path)
     elif (gt_path.endswith('.xml')):
-        annotations_list = read_annotations(gt_path, video_path)
+        annotations_list = read_annotations_from_xml(gt_path, video_path)
     else:
         raise Exception('Incompatible filetype')
 
