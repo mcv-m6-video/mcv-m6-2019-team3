@@ -12,6 +12,14 @@
   <img src="https://github.com/mcv-m6-video/mcv-m6-2019-team3/blob/master/week2/images/demo.gif">
 </div>
 
+## Week 3: Mask-RCNN and tracking
+
+<div align="center">
+  <img src="https://github.com/mcv-m6-video/mcv-m6-2019-team3/blob/master/week3/images/mask-rcnn.gif">
+  <img src="https://github.com/mcv-m6-video/mcv-m6-2019-team3/blob/master/week3/images/tracking.gif">
+</div>
+
+
 ## Team 3
 
 - Gemma Canet Tarrés
