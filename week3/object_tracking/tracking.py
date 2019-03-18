@@ -120,7 +120,7 @@ def track_objects(video_path, detections_list, gt_list, display = False, export_
 
         if export_frames:
             visualize_tracks_opencv(image, frame_tracks, colors, export_frames=export_frames,
-                             export_path="output_frames/tracking/frames_{:04d}.png".format(n_frame))
+                             export_path="output_frames/tracking/frame_{:04d}.png".format(n_frame))
 
         # IDF1 computing
         detec_bboxes = []
