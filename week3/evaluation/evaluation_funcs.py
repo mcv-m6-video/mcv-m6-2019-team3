@@ -5,6 +5,7 @@ import cv2
 import numpy as np
 from collections import defaultdict
 import matplotlib.pyplot as plt
+from tqdm import tqdm
 
 from evaluation.bbox_iou import bbox_iou
 from utils.plotting import plot_precision_recall_curve, plot_multiple_precision_recall_curves
@@ -158,30 +159,32 @@ def compute_mAP(groundtruth_list_original, detections_list, IoU_threshold=0.5, v
     return precision, recall, max_precision_per_step, F1_score, mAP
 
 def compute_mAP_track(groundtruth_tracks, detections_tracks, IoU_threshold=0.5):
+    """
+    Calculate the mean of the best mAP for each id_track of the groundtruth
+    """
 
     mAP_list = list()
+    pbar=tqdm(total=len(groundtruth_tracks))
 
-    for detection_track in detections_tracks:
-        print('DETECTION')
-        #print(detection_track)
+    for groundtruth_track in groundtruth_tracks:
+        #print('DETECTION'), print(detection_track)
         max_mAP = 0
-        for groundtruth_track in groundtruth_tracks:
 
-
+        for detection_track in detections_tracks:
             #print(groundtruth_track)
-            precision, recall, max_precision_per_step, F1_score, mAP = compute_mAP(groundtruth_track.detections,
-                                                                                   detection_track.detections,
-                                                                                   IoU_threshold,
-                                                                                   verbose = False)
+            _, _, _, _, mAP = compute_mAP(groundtruth_track.detections, detection_track.detections,
+                                          IoU_threshold, verbose = False)
             #print(mAP)
-            if(mAP > max_mAP):
+            if(max_mAP < mAP):
                 max_mAP = mAP
 
         mAP_list.append(max_mAP)
+        pbar.update(1)
 
-    test = np.asarray(mAP_list)
-    print(test)
-    print("mAP = {}".format(np.mean(test)))
+    pbar.close()
+    np_mAP_list = np.asarray(mAP_list)
+    print(np_mAP_list)
+    print("mAP = {}".format(np.mean(np_mAP_list)))
 
 
 def performance_accumulation_window(detections, annotations):

@@ -55,10 +55,10 @@ if __name__ == '__main__':
 
     # Task 2.1: Tracking by Overlap and Task 2.4: IDF1 for Multiple Object Tracking
     print("\nComputing tracking by overlap")
-    tracks = track_objects(video_path, detections_list, groundtruth_list, display=display_frames, export_frames=export_frames)
+    detected_tracks = track_objects(video_path, detections_list, groundtruth_list, display=display_frames, export_frames=export_frames)
 
     # Compute mAP
-    compute_mAP_track(tracks_gt_list, tracks)
+    compute_mAP_track(tracks_gt_list, detected_tracks)
 
     # Task 2.2: Kalman filter
     # ToDo
