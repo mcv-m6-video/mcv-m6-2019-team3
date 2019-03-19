@@ -123,11 +123,12 @@ def read_annotations_from_txt(gt_path, analyze=False):
 
 
 def read_annotations_file(gt_path, video_path):
+    tracks_gt_list = []
     if (gt_path.endswith('.txt')):
         annotations_list = read_annotations_from_txt(gt_path)
     elif (gt_path.endswith('.xml')):
-        annotations_list = read_annotations_from_xml(gt_path, video_path)
+        annotations_list, tracks_gt_list = read_annotations_from_xml(gt_path, video_path)
     else:
         raise Exception('Incompatible filetype')
 
-    return annotations_list
+    return annotations_list, tracks_gt_list

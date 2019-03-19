@@ -31,16 +31,16 @@ if __name__ == '__main__':
     if use_pkl and os.path.exists('groundtruth.pkl'):
         with open('groundtruth.pkl', 'rb') as p:
             print("Reading detections from groundtruth.pkl")
-            groundtruth_list = pickle.load(p)
+            groundtruth_list, tracks_gt_list = pickle.load(p)
     else:
-        groundtruth_list, tracks_gt_list = read_annotations_file(groundtruth_xml_path, video_path)  # Something is wrong, read_annotations_file only returns 1 value
+        groundtruth_list, tracks_gt_list = read_annotations_file(groundtruth_xml_path, video_path)
         with open('groundtruth.pkl', 'wb') as f:
-            pickle.dump(groundtruth_list, f)
+            pickle.dump([groundtruth_list, tracks_gt_list], f)
 
     # Task 1.1: Mask-RCNN Off-the-shelf
     # Read Mask-RCNN detections from file
     print("\nGetting detections")
-    detections_list = read_annotations_file(mask_detections_path, video_path)
+    detections_list, _ = read_annotations_file(mask_detections_path, video_path)
 
     # Compute mAP
     print("\nComputing mAP")
@@ -58,7 +58,7 @@ if __name__ == '__main__':
     tracks = track_objects(video_path, detections_list, groundtruth_list, display=display_frames, export_frames=export_frames)
 
     # Compute mAP
-    # compute_mAP_track(tracks_gt_list, tracks) # We don't have tracks_gt_list
+    compute_mAP_track(tracks_gt_list, tracks)
 
     # Task 2.2: Kalman filter
     # ToDo

@@ -59,7 +59,7 @@ def compute_IoU(video_path, groundtruth_list, detections_list):
     print("F1={}".format(F1_score))
     return IoUFrames, F1_frames
 
-def compute_mAP(groundtruth_list_original, detections_list, IoU_threshold=0.5):
+def compute_mAP(groundtruth_list_original, detections_list, IoU_threshold=0.5, verbose = True):
 
     groundtruth_list = deepcopy(groundtruth_list_original)
 
@@ -137,7 +137,8 @@ def compute_mAP(groundtruth_list_original, detections_list, IoU_threshold=0.5):
         TP_temp, FN_temp, FP_temp = performance_accumulation_window(detection_bboxes, groundtruth_bboxes)
         FN += FN_temp
 
-    print("TP={} FN={} FP={}".format(TP, FN, FP))
+    if verbose:
+        print("TP={} FN={} FP={}".format(TP, FN, FP))
 
     recall = 0
     precision = 0
@@ -151,22 +152,36 @@ def compute_mAP(groundtruth_list_original, detections_list, IoU_threshold=0.5):
     #print("recall:{}".format(recall))
     #print(max_precision_per_step)
     mAP = sum(max_precision_per_step)/11
-    print("mAP: {}".format(mAP))
+    if verbose:
+        print("mAP: {}".format(mAP))
 
     return precision, recall, max_precision_per_step, F1_score, mAP
 
 def compute_mAP_track(groundtruth_tracks, detections_tracks, IoU_threshold=0.5):
+
+    mAP_list = list()
+
     for detection_track in detections_tracks:
         print('DETECTION')
-        print(detection_track)
+        #print(detection_track)
+        max_mAP = 0
         for groundtruth_track in groundtruth_tracks:
+
+
             #print(groundtruth_track)
             precision, recall, max_precision_per_step, F1_score, mAP = compute_mAP(groundtruth_track.detections,
                                                                                    detection_track.detections,
-                                                                                   IoU_threshold)
-            print(mAP)
-            if(mAP > 0):
-                print(groundtruth_track)
+                                                                                   IoU_threshold,
+                                                                                   verbose = False)
+            #print(mAP)
+            if(mAP > max_mAP):
+                max_mAP = mAP
+
+        mAP_list.append(max_mAP)
+
+    test = np.asarray(mAP_list)
+    print(test)
+    print("mAP = {}".format(np.mean(test)))
 
 
 def performance_accumulation_window(detections, annotations):
