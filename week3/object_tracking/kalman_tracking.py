@@ -23,13 +23,14 @@ def kalman_track_objects(video_path, detections_list, gt_list, display=False, ex
     pbar = tqdm(total=2140)
     acc = mm.MOTAccumulator(auto_id=True)
     new_detections = []
-
+    new_detections_list = []
     # detections_list = read_detections(detections_list)
     kalman_tracker = Sort()
     while capture.isOpened():
         valid, frame = capture.read()
         if not valid:
             break
+        frame_detections = []
         frame_idx += 1
         unused_detections = detections_list
         frame_tracks = {}
@@ -40,7 +41,7 @@ def kalman_track_objects(video_path, detections_list, gt_list, display=False, ex
         gt_formatted = [[x.bbox[0], x.bbox[1], x.bbox[2], x.bbox[3], x.confidence] for x in gt_on_frame]        
         trackers = kalman_tracker.update(detections_formatted)
         pbar.update(1)
-        new_detections.append(trackers)
+        new_detections_list.append(trackers)
         # IDF1 computing
         detec_bboxes = []
         detec_ids = []
@@ -49,11 +50,11 @@ def kalman_track_objects(video_path, detections_list, gt_list, display=False, ex
         for gt in gt_on_frame:
             gt_bboxes.append(gt.bbox)
             gt_ids.append(gt.track_id)
-        # new_detections.append(for line in trackers)
         for track_det in trackers:
-        #     updatedDetection = Detection(frame_idx, )
             detec_bboxes.append(track_det[:4])
             detec_ids.append(track_det[4])
+            # frame_detections.append(Detection(frame_idx,'car',track_det[0],track_det[1],track_det[2]-track_det[0],track_det[3]-track_det[1],track_id=track_det[4]))
+            new_detections.append(Detection(frame_idx,'car',track_det[0],track_det[1],track_det[2]-track_det[0],track_det[3]-track_det[1],track_id=track_det[4]))
         mm_gt_bboxes = [[(bbox[0]+bbox[2])/2, (bbox[1]+bbox[3])/2, bbox[2]-bbox[0], bbox[3]-bbox[1]] for bbox in gt_bboxes]
         mm_detec_bboxes = [[(bbox[0]+bbox[2])/2, (bbox[1]+bbox[3])/2, bbox[2] - bbox[0], bbox[3] - bbox[1]] for bbox in detec_bboxes]
         distances_gt_det = mm.distances.iou_matrix(mm_gt_bboxes, mm_detec_bboxes, max_iou=1.)
@@ -71,7 +72,6 @@ def kalman_track_objects(video_path, detections_list, gt_list, display=False, ex
                 cv2.putText(frame, str(track_det[4]), placement, font, font_scale, font_color, line_type)
             cv2.imshow('output', frame)
             cv2.waitKey()
-    
     pbar.close()
     capture.release()
     cv2.destroyAllWindows()
