@@ -63,6 +63,6 @@ if __name__ == '__main__':
 
     # Task 2.2: Kalman filter
     print("Kalman")
-    kalman_track_objects(video_path, detections_list, groundtruth_list, display=True, export_frames=export_frames)
+    kalman_track_objects(video_path, detections_list, groundtruth_list, display=display_frames, export_frames=export_frames)
 
     
