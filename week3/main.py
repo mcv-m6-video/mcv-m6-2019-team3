@@ -59,7 +59,7 @@ if __name__ == '__main__':
     detected_tracks = track_objects(video_path, detections_list, groundtruth_list, display=display_frames, export_frames=export_frames)
 
     # Compute mAP
-    compute_mAP_track(tracks_gt_list, detected_tracks)
+    compute_mAP(groundtruth_list, detected_tracks)
 
     # Task 2.2: Kalman filter and Task 2.4: IDF1 for Multiple Object Tracking
     print("Kalman")

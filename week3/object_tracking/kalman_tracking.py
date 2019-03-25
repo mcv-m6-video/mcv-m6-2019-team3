@@ -16,6 +16,7 @@ from utils.detection import Detection
 #             detections.append(box)
 #     return np.array(detections)
 
+
 def kalman_track_objects(video_path, detections_list, gt_list, display=False, export_frames=False):
     capture = cv2.VideoCapture(video_path)
     frame_idx = 0
