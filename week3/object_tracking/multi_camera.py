@@ -5,6 +5,18 @@ from collections import defaultdict, Counter
 
 from utils.plotting import visualize_tracks, visualize_tracks_opencv
 
+def intersection(u, v):
+    """
+    Compare histograms based on their intersection.
+
+    Args:
+        u (ndarray): 1D array of type np.float32 containing image descriptors.
+        v (ndarray): 1D array of type np.float32 containing image descriptors.
+
+    Returns:
+        float: distance between histograms.
+    """
+    return 1 - cv2.compareHist(np.array(u), np.array(v), cv2.HISTCMP_INTERSECT)
 
 def compute_3d_detecs(detections, homography):
     detecs_3d = {}
@@ -15,7 +27,7 @@ def compute_3d_detecs(detections, homography):
         H = np.array(homography)
         Hinv = inv(H)
         pos_2d = np.array([x, y, 1])
-        detecs_3d[detec.track_id] =Hinv.dot(pos_2d)
+        detecs_3d[detec.track_id] =dict(position=Hinv.dot(pos_2d), histogram=detec.histogram)
 
     return detecs_3d
 
@@ -50,7 +62,7 @@ def visualize_matches(matched_tracks, cameras_tracks_0, cameras_tracks_1, video_
                     frame_tracks_0[matched_tracks[detec.track_id]] = dict(bbox=detec.bbox)
 
         visualize_tracks_opencv(image, frame_tracks_0, colors, export_frames=True,
-                                export_path="output_frames_3/c001/frame_{:04d}.png".format(n_frame))
+                                export_path="output_frames_5/c001/frame_{:04d}.png".format(n_frame))
         if n_frame%2 == 0:
             visualize_tracks(image, frame_tracks_0, colors, display=False)
         n_frame += 1
@@ -67,7 +79,7 @@ def visualize_matches(matched_tracks, cameras_tracks_0, cameras_tracks_1, video_
             if detec.frame == n_frame:
                 frame_tracks_1[detec.track_id] = dict(bbox=detec.bbox)
         visualize_tracks_opencv(image, frame_tracks_1, colors, export_frames=True,
-                                export_path="output_frames_3/c002/frame_{:04d}.png".format(n_frame))
+                                export_path="output_frames_example/after/frame_{:04d}.png".format(n_frame-900))
         if n_frame%2 == 0:
             visualize_tracks(image, frame_tracks_1, colors, display=False)
         n_frame += 1
@@ -88,7 +100,8 @@ def match_tracks(cameras_tracks, homographies, timestamps, framenum, fps, video_
 
         for track_0, det_0 in detecs_3d_0.items():
             for track_1, det_1 in detecs_3d_1.items():
-                dist[track_0].append({track_1: np.linalg.norm(det_0 - det_1)})
+                if intersection(det_0['histogram'], det_1['histogram']) < 0.5:
+                    dist[track_0].append({track_1: np.linalg.norm(det_0['position'] - det_1['position'])})
 
     print(dist)
     total_distances = []

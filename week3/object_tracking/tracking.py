@@ -11,6 +11,67 @@ from utils.plotting import visualize_tracks, visualize_tracks_opencv
 from utils.track import Track
 
 
+def intersection(u, v):
+    """
+    Compare histograms based on their intersection.
+
+    Args:
+        u (ndarray): 1D array of type np.float32 containing image descriptors.
+        v (ndarray): 1D array of type np.float32 containing image descriptors.
+
+    Returns:
+        float: distance between histograms.
+    """
+    return 1 - cv2.compareHist(np.array(u), np.array(v), cv2.HISTCMP_INTERSECT)
+
+
+def hsv_histogram(image):
+    h, w, c = image.shape
+    hsv = cv2.cvtColor(image, cv2.COLOR_RGB2HSV)
+
+    sizes = [180, 256, 256]
+    ranges = [(0, 180), (0, 256), (0, 256)]
+    descriptors = []
+    for i in range(c):
+        hist = cv2.calcHist([hsv], [i], None, [sizes[i]], ranges[i]).ravel()
+        hist = hist / (h * w)  # normalize
+        descriptors.append(np.array(hist, dtype=np.float32))
+
+    descriptors = descriptors/np.linalg.norm(descriptors)
+    return np.array(descriptors)
+
+def rgb_histogram(image):
+    h, w, c = image.shape
+
+    descriptors = []
+    for i in range(c):
+        hist = np.histogram(image[:, :, i], bins=256, range=(0, 255))[0]
+        hist = hist / (h * w)  # normalize
+        descriptors.append(np.array(hist, dtype=np.float32))
+
+    return descriptors
+
+
+def color_check(image, bbox_1, bbox_2):
+    image_1 = image[int(bbox_1[1]):int(bbox_1[3]), int(bbox_1[0]):int(bbox_1[2]), :]
+    image_2 = image[int(bbox_2[1]):int(bbox_2[3]), int(bbox_2[0]):int(bbox_2[2]), :]
+
+    u = rgb_histogram(image_1)
+    v = rgb_histogram(image_2)
+
+    if intersection(u, v) < 0.3:
+        return True
+    return False
+
+
+def ratio_check(bbox_1, bbox_2):
+    box_h_1, box_w_1 = bbox_1[2] - bbox_1[0], bbox_1[3] - bbox_1[1]
+    box_h_2, box_w_2 = bbox_2[2] - bbox_2[0], bbox_2[3] - bbox_2[1]
+    if (box_h_1/box_w_1) > 1.2*(box_h_2/box_w_2) or (box_h_1/box_w_1) < 0.8*(box_h_2/box_w_2):
+        return False
+    return True
+
+
 def obtain_new_tracks(tracks, unused_detections, max_track, frame_tracks):
     for detection in unused_detections:
         tracks.append(Track(max_track+1, [detection], 0, 1, 1))
@@ -62,7 +123,7 @@ def update_tracks(image, tracks, detections, frame_tracks):
                 last_bbox = predict_position(image, track)
             else:
                 last_bbox = track.detections[-1].bbox
-            match_detection = match_next_bbox(last_bbox, unused_detections)
+            match_detection = match_next_bbox(image, last_bbox, unused_detections)
             if match_detection is not None:
                 unused_detections.remove(match_detection)
                 track.detections.append(match_detection)
@@ -77,11 +138,12 @@ def update_tracks(image, tracks, detections, frame_tracks):
     return tracks, unused_detections, frame_tracks
 
 
-def match_next_bbox(last_bbox, unused_detections):
+def match_next_bbox(image, last_bbox, unused_detections):
     highest_IoU = 0
     for detection in unused_detections:
         IoU = bbox_iou(last_bbox, detection.bbox)
-        if IoU > highest_IoU:
+
+        if IoU > highest_IoU and color_check(image, last_bbox, detection.bbox) and ratio_check(last_bbox, detection.bbox):
             highest_IoU = IoU
             best_match = detection
 
@@ -133,7 +195,8 @@ def track_objects(video_path, detections_list, gt_list, display = False, export_
             conf = value['confidence']
             detec_bboxes.append(bbox)
             new_detections.append(Detection(n_frame, 'car', bbox[0], bbox[1], bbox[2] - bbox[0],
-                                            bbox[3] - bbox[1], conf, track_id=key))
+                                            bbox[3] - bbox[1], conf, track_id=key,
+                                            histogram=rgb_histogram(image[int(bbox[1]):int(bbox[3]), int(bbox[0]):int(bbox[2]), :])))
 
 
         gt_bboxes = []
