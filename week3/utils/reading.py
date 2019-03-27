@@ -68,6 +68,9 @@ def read_annotations_from_xml(annotation_path, video_path):
                 #    continue
 
                 frame = int(box.attrib['frame'])
+                #if frame < 534:
+                #    continue
+
                 xtl = int(float(box.attrib['xtl']))
                 ytl = int(float(box.attrib['ytl']))
                 xbr = int(float(box.attrib['xbr']))
@@ -75,9 +78,9 @@ def read_annotations_from_xml(annotation_path, video_path):
                 ground_truths.append(Detection(frame, label, xtl, ytl, xbr - xtl + 1, ybr - ytl + 1, 1, gt_id))
                 track_corresponding = [t for t in tracks if t.id == gt_id]
                 if len(track_corresponding) > 0:
-                    track_corresponding[0].detections.append(Detection(frame, label, xtl, ytl, xbr - xtl + 1, ybr - ytl + 1, 1))
+                    track_corresponding[0].detections.append(Detection(frame+1, label, xtl, ytl, xbr - xtl + 1, ybr - ytl + 1, 1))
                 else:
-                    track_corresponding = Track(gt_id, [Detection(frame, label, xtl, ytl, xbr - xtl + 1, ybr - ytl + 1, 1)])
+                    track_corresponding = Track(gt_id, [Detection(frame+1, label, xtl, ytl, xbr - xtl + 1, ybr - ytl + 1, 1)])
                     tracks.append(track_corresponding)
         pbar.update(1)
         num += 1
@@ -106,6 +109,8 @@ def read_annotations_from_txt(gt_path, analyze=False):
     with open(gt_path) as f:
         for line in f:
             data = line.split(',')
+            #if int(data[0])-1 < 534:
+            #    continue
             ground_truths_list.append(Detection(int(data[0])-1, 'car', int(float(data[2])), int(float(data[3])), int(float(data[4])), int(float(data[5])),float(data[6])))
 
             if analyze:

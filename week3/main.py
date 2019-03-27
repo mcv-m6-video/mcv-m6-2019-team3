@@ -19,7 +19,8 @@ roi_path = '../datasets/AICity_data/train/S03/c010/roi.jpg'
 
 # Own detections
 mask_detections_path = "../annotations/Mask-RCNN-detections.txt"
-#mask_fine_tuned_detections_path = ""
+yolo_detections_path = "../annotations/yolo_detections.txt"
+yolo_fine_tuned_detections_path = "../annotations/yolo_fine_tunning_detections.txt"
 
 if __name__ == '__main__':
     # Flags
@@ -52,7 +53,7 @@ if __name__ == '__main__':
     #draw_video_bboxes(video_path, groundtruth_list, detections_list, export_frames=export_frames)
 
     # Task 1.2
-    # ToDo: Read fine-tuned detections, compute mAP and export frames
+    # Done on each network folder
 
     # Task 2.1: Tracking by Overlap and Task 2.4: IDF1 for Multiple Object Tracking
     print("\nComputing tracking by overlap")
