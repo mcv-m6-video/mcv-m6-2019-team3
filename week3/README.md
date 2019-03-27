@@ -3,11 +3,11 @@
 ## Week 3: CNN and tracking
 
 <div align="center">
-  Mask R-CNN:
+  Mask R-CNN:<br>
   <img src="https://github.com/mcv-m6-video/mcv-m6-2019-team3/blob/master/week3/images/mask-rcnn_off_the_shelf.gif">
-  YOLO:
+  YOLO:<br>
   <img src="https://github.com/mcv-m6-video/mcv-m6-2019-team3/blob/master/week3/images/yolo.gif">
-  Tracking by Overlap:
+  Tracking by Overlap:<br>
   <img src="https://github.com/mcv-m6-video/mcv-m6-2019-team3/blob/master/week3/images/tracking_overlap.gif">
 </div>
 
