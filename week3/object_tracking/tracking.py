@@ -22,7 +22,7 @@ def intersection(u, v):
     Returns:
         float: distance between histograms.
     """
-    return 1 - cv2.compareHist(u, v, cv2.HISTCMP_INTERSECT)
+    return 1 - cv2.compareHist(np.array(u), np.array(v), cv2.HISTCMP_INTERSECT)
 
 
 def hsv_histogram(image):
@@ -37,7 +37,8 @@ def hsv_histogram(image):
         hist = hist / (h * w)  # normalize
         descriptors.append(np.array(hist, dtype=np.float32))
 
-    return descriptors
+    descriptors = descriptors/np.linalg.norm(descriptors)
+    return np.array(descriptors)
 
 def rgb_histogram(image):
     h, w, c = image.shape
@@ -58,10 +59,7 @@ def color_check(image, bbox_1, bbox_2):
     u = rgb_histogram(image_1)
     v = rgb_histogram(image_2)
 
-    u = u / np.linalg.norm(u)
-    v = v / np.linalg.norm(v)
-
-    if intersection(np.array(u), np.array(v)) < 0.3:
+    if intersection(u, v) < 0.3:
         return True
     return False
 
@@ -197,7 +195,8 @@ def track_objects(video_path, detections_list, gt_list, display = False, export_
             conf = value['confidence']
             detec_bboxes.append(bbox)
             new_detections.append(Detection(n_frame, 'car', bbox[0], bbox[1], bbox[2] - bbox[0],
-                                            bbox[3] - bbox[1], conf, track_id=key))
+                                            bbox[3] - bbox[1], conf, track_id=key,
+                                            histogram=rgb_histogram(image[int(bbox[1]):int(bbox[3]), int(bbox[0]):int(bbox[2]), :])))
 
 
         gt_bboxes = []
