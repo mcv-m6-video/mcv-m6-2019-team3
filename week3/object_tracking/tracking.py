@@ -91,14 +91,15 @@ def match_next_bbox(last_bbox, unused_detections):
         return None
 
 
-def track_objects(video_path, detections_list, gt_list, display = False, export_frames = False):
+def track_objects(video_path, detections_list, gt_list, display = False, export_frames = False, idf1 = True):
 
     colors = np.random.rand(500, 3)  # used only for display
     tracks = []
     max_track = 0
     new_detections = []
 
-    acc = mm.MOTAccumulator(auto_id=True)
+    if idf1:
+        acc = mm.MOTAccumulator(auto_id=True)
 
     capture = cv2.VideoCapture(video_path)
     n_frame = 0
@@ -116,7 +117,7 @@ def track_objects(video_path, detections_list, gt_list, display = False, export_
         tracks, unused_detections, frame_tracks = update_tracks(image, tracks, detections_on_frame, frame_tracks)
         tracks, max_track, frame_tracks = obtain_new_tracks(tracks, unused_detections, max_track, frame_tracks)
 
-        if display and n_frame%10==0:
+        if display and n_frame%2==0 and n_frame < 200:
             visualize_tracks(image, frame_tracks, colors, display=display)
 
         if export_frames:
@@ -145,7 +146,8 @@ def track_objects(video_path, detections_list, gt_list, display = False, export_
         mm_detec_bboxes = [[(bbox[0]+bbox[2])/2, (bbox[1]+bbox[3])/2, bbox[2] - bbox[0], bbox[3] - bbox[1]] for bbox in detec_bboxes]
 
         distances_gt_det = mm.distances.iou_matrix(mm_gt_bboxes, mm_detec_bboxes, max_iou=1.)
-        acc.update(gt_ids, detec_ids, distances_gt_det)
+        if idf1:
+            acc.update(gt_ids, detec_ids, distances_gt_det)
 
         pbar.update(1)
         n_frame += 1
@@ -154,9 +156,10 @@ def track_objects(video_path, detections_list, gt_list, display = False, export_
     capture.release()
     cv2.destroyAllWindows()
 
-    print(acc.mot_events)
-    mh = mm.metrics.create()
-    summary = mh.compute(acc, metrics=mm.metrics.motchallenge_metrics, name='acc')
-    print(summary)
+    if idf1:
+        print(acc.mot_events)
+        mh = mm.metrics.create()
+        summary = mh.compute(acc, metrics=mm.metrics.motchallenge_metrics, name='acc')
+        print(summary)
 
     return new_detections
