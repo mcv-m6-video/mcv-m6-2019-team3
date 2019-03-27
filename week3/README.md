@@ -1,10 +1,14 @@
 # M6 Project: Video Surveillance for Road Traffic Monitoring
 
-## Week 3: Mask-RCNN and tracking
+## Week 3: CNN and tracking
 
 <div align="center">
-  <img src="https://github.com/mcv-m6-video/mcv-m6-2019-team3/blob/master/week3/images/mask-rcnn.gif">
-  <img src="https://github.com/mcv-m6-video/mcv-m6-2019-team3/blob/master/week3/images/tracking.gif">
+  Mask R-CNN:
+  <img src="https://github.com/mcv-m6-video/mcv-m6-2019-team3/blob/master/week3/images/mask-rcnn_off_the_shelf.gif">
+  YOLO:
+  <img src="https://github.com/mcv-m6-video/mcv-m6-2019-team3/blob/master/week3/images/yolo.gif">
+  Tracking by Overlap:
+  <img src="https://github.com/mcv-m6-video/mcv-m6-2019-team3/blob/master/week3/images/tracking_overlap.gif">
 </div>
 
 To run the project
@@ -25,8 +29,8 @@ export_frames = False           # Save .png images to disk
 .
 ├── evaluation/               # IoU, mAP
 ├── images/                   # Example images and GIFs
-├── object_tracking/          # Tracking algorithms
 ├── main.py
-├── Mask_R-CNN_demo.ipynb     # Predict frames using Mask R-CNN
+├── notebooks/                # Necessary notebooks to do some specific tasks for CNNs
+├── object_tracking/          # Tracking algorithms
 └── util/                     # Readers, plots 
 ```
