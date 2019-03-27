@@ -12,13 +12,12 @@
   <img src="https://github.com/mcv-m6-video/mcv-m6-2019-team3/blob/master/week2/images/demo.gif">
 </div>
 
-## Week 3: Mask-RCNN and tracking
+## Week 3: CNN and tracking
 
 <div align="center">
-  <img src="https://github.com/mcv-m6-video/mcv-m6-2019-team3/blob/master/week3/images/mask-rcnn.gif">
-  <img src="https://github.com/mcv-m6-video/mcv-m6-2019-team3/blob/master/week3/images/tracking.gif">
+  <img src="https://github.com/mcv-m6-video/mcv-m6-2019-team3/blob/master/week3/images/mask-rcnn_off_the_shelf.gif">
+  <img src="https://github.com/mcv-m6-video/mcv-m6-2019-team3/blob/master/week3/images/tracking_overlap.gif">
 </div>
-
 
 ## Team 3
 
@@ -40,9 +39,11 @@ pip install -r requirements.txt
 ├── datasets/
 ├── requirements.txt    # python dependencies
 ├── week1/
-└── week2/
+├── week2/
+└── week3/
     ├── evaluation/
     ├── main.py
+    ├── notebooks/
     ├── processing/
     └── util/
 ```
