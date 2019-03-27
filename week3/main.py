@@ -5,6 +5,7 @@ from evaluation.evaluation_funcs import compute_mAP, compute_mAP_track
 from object_tracking.tracking import track_objects
 from utils.plotting import draw_video_bboxes
 from utils.reading import read_annotations_file
+from object_tracking.kalman_tracking import kalman_track_objects
 
 # Groundtruth
 video_path = "../datasets/AICity_data/train/S03/c010/vdo.avi"
@@ -58,7 +59,11 @@ if __name__ == '__main__':
     detected_tracks = track_objects(video_path, detections_list, groundtruth_list, display=display_frames, export_frames=export_frames)
 
     # Compute mAP
-    compute_mAP_track(tracks_gt_list, detected_tracks)
+    compute_mAP(groundtruth_list, detected_tracks)
 
-    # Task 2.2: Kalman filter
-    # ToDo
+    # Task 2.2: Kalman filter and Task 2.4: IDF1 for Multiple Object Tracking
+    print("Kalman")
+    kalman_tracks = kalman_track_objects(video_path, detections_list, groundtruth_list, display=display_frames, export_frames=export_frames)
+
+    # Compute mAP
+    compute_mAP(groundtruth_list, kalman_tracks)

@@ -5,3 +5,4 @@ matplotlib
 scikit-image
 tqdm
 motmetrics
+filterpy==1.4.1

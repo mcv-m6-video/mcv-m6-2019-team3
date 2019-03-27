@@ -14,7 +14,7 @@ from utils.track import Track
 def obtain_new_tracks(tracks, unused_detections, max_track, frame_tracks):
     for detection in unused_detections:
         tracks.append(Track(max_track+1, [detection], 0, 1, 1))
-        frame_tracks[max_track+1] = detection.bbox
+        frame_tracks[max_track+1] = dict(bbox= detection.bbox, confidence= detection.confidence)
 
         max_track += 1
 
@@ -66,7 +66,7 @@ def update_tracks(image, tracks, detections, frame_tracks):
             if match_detection is not None:
                 unused_detections.remove(match_detection)
                 track.detections.append(match_detection)
-                frame_tracks[track.id] = match_detection.bbox
+                frame_tracks[track.id] = dict(bbox=match_detection.bbox, confidence=match_detection.confidence)
                 track.hits +=1
                 if track.time_since_update == 0:
                     track.hit_streak += 1
@@ -96,6 +96,7 @@ def track_objects(video_path, detections_list, gt_list, display = False, export_
     colors = np.random.rand(500, 3)  # used only for display
     tracks = []
     max_track = 0
+    new_detections = []
 
     acc = mm.MOTAccumulator(auto_id=True)
 
@@ -127,7 +128,12 @@ def track_objects(video_path, detections_list, gt_list, display = False, export_
         detec_ids = []
         for key, value in frame_tracks.items():
             detec_ids.append(key)
-            detec_bboxes.append(value)
+            bbox = value['bbox']
+            conf = value['confidence']
+            detec_bboxes.append(bbox)
+            new_detections.append(Detection(n_frame, 'car', bbox[0], bbox[1], bbox[2] - bbox[0],
+                                            bbox[3] - bbox[1], conf, track_id=key))
+
 
         gt_bboxes = []
         gt_ids = []
@@ -153,4 +159,4 @@ def track_objects(video_path, detections_list, gt_list, display = False, export_
     summary = mh.compute(acc, metrics=mm.metrics.motchallenge_metrics, name='acc')
     print(summary)
 
-    return tracks
+    return new_detections
