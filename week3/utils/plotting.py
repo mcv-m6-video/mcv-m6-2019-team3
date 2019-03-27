@@ -124,7 +124,7 @@ def visualize_tracks(image, frame_tracks, colors, display=False, export_frames=F
 
     for id in frame_tracks.keys():
         bbox = frame_tracks[id]
-        minc, minr, maxc, maxr = bbox
+        minc, minr, maxc, maxr = bbox['bbox']
         rect = mpatches.Rectangle((minc, minr), maxc - minc + 1, maxr - minr + 1, fill=False, edgecolor=colors[id], linewidth=2)
         ax.add_patch(rect)
 
@@ -134,6 +134,7 @@ def visualize_tracks(image, frame_tracks, colors, display=False, export_frames=F
     if export_frames:
         plt.savefig(export_path, bbox_inches='tight', pad_inches=0, dpi=72)
 
+
 def visualize_tracks_opencv(image, frame_tracks, colors, display=False, export_frames=False, export_path="test.png"):
     """
     Draw on an image the bounding boxes on frame_tracks, with a different color for each track
@@ -141,7 +142,7 @@ def visualize_tracks_opencv(image, frame_tracks, colors, display=False, export_f
     """
     for id in frame_tracks.keys():
         bbox = frame_tracks[id]
-        minc, minr, maxc, maxr = bbox
+        minc, minr, maxc, maxr = bbox['bbox']
         cv2.rectangle(image, (minc, minr), (maxc, maxr), colors[id]*255, 8)
 
     if display:

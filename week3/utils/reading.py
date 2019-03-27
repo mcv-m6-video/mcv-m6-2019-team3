@@ -137,3 +137,12 @@ def read_annotations_file(gt_path, video_path):
         raise Exception('Incompatible filetype')
 
     return annotations_list, tracks_gt_list
+
+
+def read_homography_matrix(hom_path):
+    with open(hom_path) as f:
+        first_line = True
+        for line in f:
+            if first_line:
+                matrix = [[float(num) for num in row.split(' ')] for row in line.split(';')]
+    return matrix
