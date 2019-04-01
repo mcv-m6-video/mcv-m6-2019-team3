@@ -15,6 +15,8 @@ save_path = '../plots/'
 
 
 if __name__ == '__main__':
+
+    # Task 1
     sequences = read_sequences(sequences_path)
     flow_gt, flow_test = read_flow_data(gt_noc, test)
 
@@ -22,6 +24,7 @@ if __name__ == '__main__':
     search_area = [2, 4, 8, 16, 32, 64]
     step_size = [16]
     error_function=['SSD', 'MSD', 'SAD']
+
     for bs in block_size:
         for sa in search_area:
             for ss in step_size:
@@ -33,4 +36,3 @@ if __name__ == '__main__':
 
                     print("MSEN: {}".format(msen))
                     print("PEPN: {}".format(pepn))
-
