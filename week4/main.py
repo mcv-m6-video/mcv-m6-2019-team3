@@ -1,20 +1,22 @@
 from itertools import product
 import numpy as np
 
+from block_matching import block_matching_optical_flow
+from optical_flow import farneback
 from utils.optical_flow_metrics import compute_msen, read_flow_data
 from utils.optical_flow_plot import plot_opticalflow_bm, plot_opticalflow_gt, read_opticalflow, read_sequences
 from utils.plotting import create_folder
-from block_matching import block_matching_optical_flow
 
 
-test = "../datasets/results_opticalflow_kitti/results/LKflow_000045_10.png"
+sequences_path = '../datasets/data_stereo_flow/training/image_0/'
+
+gt_path = '../datasets/data_stereo_flow/training/flow_noc/'
 gt_noc = "../datasets/data_stereo_flow/training/flow_noc/000045_10.png"
 
 opticalflow_path = '../datasets/results_opticalflow_kitti/results/'
-sequences_path = '../datasets/data_stereo_flow/training/image_0/'
-gt_path = '../datasets/data_stereo_flow/training/flow_noc/'
-save_path = 'plots/'
+test = "../datasets/results_opticalflow_kitti/results/LKflow_000045_10.png"
 
+save_path = 'plots/'
 
 if __name__ == '__main__':
 
@@ -30,6 +32,7 @@ if __name__ == '__main__':
     step_size = [16]
     error_function=['SSD', 'MSD', 'SAD']
 
+    """
     for bs, sa, ss, ef in list(product(block_size, search_area, step_size, error_function)):
 
         print('Block size: {0}, search area: {1}, step size: {2}, error function: {3}'.format(bs,sa,ss,ef))
@@ -48,5 +51,11 @@ if __name__ == '__main__':
         #                 save_path=save_path + 'BM_optflow/')
         #plot_opticalflow_gt(gt_opticalflow, first_sequence, title='GT optical flow',
         #                 save_path=save_path + 'GT_optflow/', need_conversion=True)
+    """
 
+    # Task 1.2
+    farneback = farneback(sequences[0], sequences[1])
+    msen, pepn = compute_msen(flow_gt, np.rot90(farneback))
 
+    print("MSEN: {}".format(msen))
+    print("PEPN: {}".format(pepn))
