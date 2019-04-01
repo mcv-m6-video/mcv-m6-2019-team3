@@ -1,9 +1,15 @@
 import cv2
+import os
 from tqdm import tqdm
 
 import matplotlib.patches as mpatches
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
+
+
+def create_folder(path):
+    if not os.path.exists(path):
+        os.makedirs(path)
 
 ########################## Precision-Recall
 

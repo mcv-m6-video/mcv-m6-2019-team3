@@ -36,16 +36,27 @@ def find_match(i, j, block, image, block_size, search_area, step_size, error_fun
     return best_row-i, best_col-j
 
 
-def block_matching_optical_flow(image1, image2, block_size=4, search_area=4, step_size=2, error_function='SSD'):
-    h, w = image1.shape[:2]
+def block_matching_optical_flow(image1, image2, block_size=4, search_area=4, step_size=2, error_function='SSD', compensation='Forward'):
+    if compensation == 'Backward':
+        ref_image = image2
+        compare_image = image1
+    elif compensation == 'Forward':
+        ref_image = image1
+        compare_image = image2
+
+    h, w = ref_image.shape[:2]
     optical_flow = np.zeros((image1.shape[1], image1.shape[0], 2))
     start = timeit.default_timer()
     for i in range(0, h-block_size+1):
         for j in range(0, w-block_size+1):
-            block1 = image1[i:i+block_size, j:j+block_size]
-            displ_i, displ_j = find_match(i, j, block1, image2, block_size, search_area, step_size, error_function)
-            optical_flow[j:j+block_size, i:i+block_size, 0] = displ_i
-            optical_flow[j:j+block_size, i:i+block_size, 1] = displ_j
+            block1 = ref_image[i:i+block_size, j:j+block_size]
+            displ_i, displ_j = find_match(i, j, block1, compare_image, block_size, search_area, step_size, error_function)
+            if compensation == 'Forward':
+                optical_flow[j:j+block_size, i:i+block_size, 0] = displ_i
+                optical_flow[j:j+block_size, i:i+block_size, 1] = displ_j
+            elif compensation == 'Backward':
+                optical_flow[j+displ_j:j+displ_j + block_size, i+displ_i:i+displ_i + block_size, 0] = -displ_i
+                optical_flow[j+displ_j:j+displ_j + block_size, i+displ_i:i+displ_i + block_size, 1] = -displ_j
     finish = timeit.default_timer()
     print('Time: {}'.format(finish-start))
     return optical_flow
