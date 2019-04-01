@@ -32,7 +32,7 @@ if __name__ == '__main__':
     step_size = [16]
     error_function=['SSD', 'MSD', 'SAD']
 
-    """
+
     for bs, sa, ss, ef in list(product(block_size, search_area, step_size, error_function)):
 
         print('Block size: {0}, search area: {1}, step size: {2}, error function: {3}'.format(bs,sa,ss,ef))
@@ -51,11 +51,11 @@ if __name__ == '__main__':
         #                 save_path=save_path + 'BM_optflow/')
         #plot_opticalflow_gt(gt_opticalflow, first_sequence, title='GT optical flow',
         #                 save_path=save_path + 'GT_optflow/', need_conversion=True)
-    """
+
 
     # Task 1.2
     farneback = farneback(sequences[0], sequences[1])
-    msen, pepn = compute_msen(flow_gt, np.rot90(farneback))
+    msen, pepn = compute_msen(flow_gt, farneback)
 
     print("MSEN: {}".format(msen))
     print("PEPN: {}".format(pepn))

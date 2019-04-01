@@ -59,4 +59,5 @@ def block_matching_optical_flow(image1, image2, block_size=4, search_area=4, ste
                 optical_flow[j+displ_j:j+displ_j + block_size, i+displ_i:i+displ_i + block_size, 1] = -displ_j
     finish = timeit.default_timer()
     print('Time: {}'.format(finish-start))
-    return optical_flow
+
+    return np.transpose(optical_flow,(1,0,2))

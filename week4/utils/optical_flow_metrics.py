@@ -34,9 +34,9 @@ def read_flow_data(gt_noc, test):
         fv_gt = (img_gt[:, :, 1] - 2. ** 15) / 64
         valid_gt = img_gt[:,:,0]
 
-        flow_gt = np.transpose(np.array([fu_gt, fv_gt, valid_gt]))
+        flow_gt = np.transpose(np.array([fu_gt, fv_gt, valid_gt]),(1,2,0))
 
-        flow_test = np.transpose(np.array([fu_test, fv_test, valid_test]))
+        flow_test = np.transpose(np.array([fu_test, fv_test, valid_test]),(1,2,0))
         print(flow_test[:-1].shape)
         plt.figure(1)
         plt.imshow(flow_gt)
@@ -61,7 +61,7 @@ def compute_msen(flow_gt, flow_test, threshold=3):
     flow_err[valid_gt == 0] = 0 
 
     plt.figure(1)
-    plt.imshow(np.transpose(flow_err), cmap="jet")
+    plt.imshow(flow_err, cmap="jet")
     plt.colorbar()
     plt.tick_params(axis='both', labelbottom=False, labelleft=False)
     plt.savefig('results/err_flow.png')
