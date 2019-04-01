@@ -15,4 +15,4 @@ class Detection(object):
         return self.__str__()
 
     def __str__(self):
-        return '\n frame={0}, label={1}, confidence={6} TopLeftXY=({2},{3}), width={4}, height={5}'.format(self.frame, self.label, self.xtl, self.ytl, self.width, self.height, self.confidence)
+        return '\n frame={0}, label={1}, confidence={6}, TopLeftXY=({2},{3}), width={4}, height={5}'.format(self.frame, self.label, self.xtl, self.ytl, self.width, self.height, self.confidence)
