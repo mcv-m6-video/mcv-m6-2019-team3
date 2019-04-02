@@ -7,68 +7,98 @@ from typing import List
 from block_matching import block_matching_optical_flow
 from optical_flow import farneback
 from evaluation.bbox_iou import detection_iou
-
-# Groundtruth
-video_path = "../datasets/AICity_data/train/S03/c010/vdo.avi"
-groundtruth_xml_path = "../annotations/m6-full_annotation.xml"
-groundtruth_path = "../datasets/AICity_data/train/S03/c010/gt/gt.txt"
-
-# Given detections
-detections_path = "../datasets/AICity_data/train/S03/c010/det/"
-detectors = ["det_ssd512.txt", "det_mask_rcnn.txt", "det_yolo3.txt"]
-roi_path = '../datasets/AICity_data/train/S03/c010/roi.jpg'
-
-# Own detections
-mask_detections_path = "../annotations/Mask-RCNN-detections.txt"
-yolo_detections_path = "../annotations/yolo_detections.txt"
-yolo_fine_tuned_detections_path = "../annotations/yolo_fine_tunning_detections.txt"
+import math
 
 
-def track_optical_flow_sequence():
-    print("Getting groundtruth")
-    groundtruth_list, tracks_gt_list = read_annotations_file(groundtruth_xml_path, video_path)
-    print("\nGetting detections")
-    detections_list, _ = read_annotations_file(mask_detections_path, video_path)
-    capture = cv2.VideoCapture(video_path)
-    frame_idx = 0
-    frame = None
-    frame_old = None  # possibly unnecessary
-    detections_on_old_frame = None
-    detections_on_frame = None
-    while capture.isOpened():
-        frame_old = frame
-        valid, frame = capture.read()
-        detections_on_old_frame = detections_on_frame
-        detections_on_frame = [x for x in detections_list if x.frame == frame_idx]
-        track_optical_flow_frame(frame_old, frame, detections_on_old_frame, detections_on_frame)
-    
+lk_params = dict( winSize  = (15, 15),
+                  maxLevel = 2,
+                  criteria = (cv2.TERM_CRITERIA_EPS | cv2.TERM_CRITERIA_COUNT, 10, 0.03))
 
-def track_optical_flow_frame(frame1, frame2, detection1 : List[Detection], detection2 : List[Detection]):
-    INTERSECTION_THRESHOLD = 0.7
-    feature_params = dict(maxCorners=500,
-                     qualityLevel=0.3,
-                     minDistance=7,
-                     blockSize=7)
-    det1_flow = []
-    mask = np.zeros((frame1.shape[0], frame1.shape[1]), dtype=np.uint8) + 255
-    if frame1 is not None and frame2 is not None:
-        for det in detection1:
-            mask[det.xtl:det.xtl + det.width, det.ytl:det.ytl + det.height] = 0
-        p0 = cv2.goodFeaturesToTrack(cv2.cvtColor(frame1, cv2.COLOR_BGR2GRAY), mask=mask, **feature_params)
-        # block matching:
-        flow = cv2.calcOpticalFlowFarneback(frame1, frame2, p0, 0.5, 3, 15, 3, 5, 1.2, 0)
-        for det in detection1:
-            det_flow = flow[det.xtl:det.xtl + det.width, det.ytl:det.ytl + det.height,:]
-            accum_flow = np.mean(det_flow[np.logical_or(det_flow[:, :, 0] != 0, det_flow[:, :, 1] != 0)], axis=(0, 1))
-            if np.isnan(accum_flow):
-                accum_flow = (0, 0)
-            det1_flow.append(
-                Detection(det.frame, det.label, det.xtl, det.ytl, det.width, det.height))
+feature_params = dict( maxCorners = 500,
+                       qualityLevel = 0.3,
+                       minDistance = 7,
+                       blockSize = 7 )
 
-        for det in detection2:
-            for det_old in det1_flow:
-                if detection_iou(det, det_old) > INTERSECTION_THRESHOLD:
-                    det.track_id = det_old.track_id
-            
+class TrackingOF:
+    def __init__(self):
+        self.track_len = 10
+        self.detect_interval = 5
+        self.tracks = []
+        self.ordered_tracks = []
+        self.frame_idx = 0
+        self.prev_gray = None
+
+    def track_optical_flow_sequence(self, video_path, visualise_of=False):
+        """
+        Based on https://github.com/opencv/opencv/blob/master/samples/python/lk_track.py
+        """
+        capture = cv2.VideoCapture(video_path)
+        track_flow = []
+
+        while capture.isOpened():
+            valid, frame = capture.read()
+            if not valid:
+                break
+            frame_gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+            vis = frame.copy()
+            frame_tracks = []
+
+            if len(self.tracks) > 0:
+                img0, img1 = self.prev_gray, frame_gray
+                p0 = np.float32([tr[-1] for tr in self.tracks]).reshape(-1, 1, 2)
+                p1, _st, _err = cv2.calcOpticalFlowPyrLK(img0, img1, p0, None, **lk_params)
+                p0r, _st, _err = cv2.calcOpticalFlowPyrLK(img1, img0, p1, None, **lk_params)
+                d = abs(p0-p0r).reshape(-1, 2).max(-1)
+                good = d < 1
+                new_tracks = []
+                for tr, (x, y), good_flag in zip(self.tracks, p1.reshape(-1, 2), good):
+                    if not good_flag:
+                        continue
+                    tr.append((x, y))
+                    frame_tracks.append((x, y))
+                    if len(tr) > self.track_len:
+                        del tr[0]
+                    new_tracks.append(tr)
+                    cv2.circle(vis, (x, y), 2, (0, 255, 0), -1)
+                self.tracks = new_tracks
+                cv2.polylines(vis, [np.int32(tr) for tr in self.tracks], False, (255, 10, 180))
+                draw_str(vis, (20, 20), 'track count: %d' % len(self.tracks))
+            if self.frame_idx % self.detect_interval == 0:
+                mask = np.zeros_like(frame_gray)
+                mask[:] = 255
+                for x, y in [np.int32(tr[-1]) for tr in self.tracks]:
+                    cv2.circle(mask, (x, y), 5, 0, -1)
+                p = cv2.goodFeaturesToTrack(frame_gray, mask = mask, **feature_params)
+                if p is not None:
+                    for x, y in np.float32(p).reshape(-1, 2):
+                        self.tracks.append([(x, y)])
+                        # frame_tracks.append((x,y))
+            # print("Frame: {}, tracks: {}\n".format(self.frame_idx, frame_tracks))
+            self.frame_idx += 1
+            self.prev_gray = frame_gray
+            self.ordered_tracks.append(frame_tracks)
+            if visualise_of:
+                cv2.imshow('lk_track', vis)
+                ch = cv2.waitKey(1)
+                if ch == 27:
+                    break
+    def check_optical_flow(self, detections_on_frame, frame_id):
+        if frame_id==0:
+            return detections_on_frame
+        else:
+            of_points = self.ordered_tracks[frame_id]
+            # of_velocities = [x-y for x,y in zip(self.ordered_tracks[frame_id],self.ordered_tracks[frame_id-1])] 
+            # of_data = [of_points, of_velocities]
+            for det in detections_on_frame:
+                relevant_data = [p for p in of_points if det.xtl<p[0]<det.xtl+det.width]
+                relevant_data = [p for p in relevant_data if det.ytl<p[1]<det.ytl+det.height]
+                speed = math.sqrt(relevant_data[0]^2+relevant_data[1]^2)
+                print("Frame: {}, speed: {}".format(frame_id, speed))
+            return detections_on_frame
+
+def draw_str(dst, target, s):
+    x, y = target
+    cv2.putText(dst, s, (x+1, y+1), cv2.FONT_HERSHEY_PLAIN, 1.0, (0, 0, 0), thickness = 2, lineType=cv2.LINE_AA)
+    cv2.putText(dst, s, (x, y), cv2.FONT_HERSHEY_PLAIN, 1.0, (255, 255, 255), lineType=cv2.LINE_AA)
 
 
