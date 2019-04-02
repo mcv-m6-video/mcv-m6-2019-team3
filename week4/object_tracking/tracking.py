@@ -40,12 +40,13 @@ def hsv_histogram(image):
     descriptors = descriptors/np.linalg.norm(descriptors)
     return np.array(descriptors)
 
+
 def rgb_histogram(image):
     h, w, c = image.shape
 
     descriptors = []
     for i in range(c):
-        hist = np.histogram(image[:, :, i], bins=256, range=(0, 255))[0]
+        hist = np.histogram(image[:, :, i], bins=10, range=(0, 255))[0]
         hist = hist / (h * w)  # normalize
         descriptors.append(np.array(hist, dtype=np.float32))
 
@@ -59,7 +60,7 @@ def color_check(image, bbox_1, bbox_2):
     u = rgb_histogram(image_1)
     v = rgb_histogram(image_2)
 
-    if intersection(u, v) < 0.3:
+    if intersection(u, v) < 0.5:
         return True
     return False
 

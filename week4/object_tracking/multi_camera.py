@@ -3,7 +3,90 @@ import numpy as np
 from numpy.linalg import inv
 from collections import defaultdict, Counter
 
+from keras.models import Sequential
+from keras.layers import Dense
+from keras.optimizers import RMSprop
+from keras.callbacks import Callback
+import matplotlib.pyplot as plt
+import pandas as pd
+
 from utils.plotting import visualize_tracks, visualize_tracks_opencv
+
+
+def create_dataset(gt_detections, timestamps, framenum, fps):
+    train_data = list()
+    train_labels = list()
+
+    #Assume cameras are in order of ascendent timestamp
+    for frame in range(framenum[0]+1):
+        detecs_frame_0 = [detec for detec in gt_detections[0] if detec.frame == frame]
+
+        for cam in range(1, len(framenum)):
+            if frame >= int(timestamps[cam]*fps) and frame <= framenum[cam]:
+                detecs_frame_1 = [detec for detec in gt_detections[1] if detec.frame == frame - int(timestamps[cam]*fps)]
+
+                for detec_0 in detecs_frame_0:
+                    matches = [detec_1 for detec_1 in detecs_frame_1 if detec_1.track_id == detec_0.track_id]
+                    if len(matches) == 1:
+                        train_data.append(np.array(detec_0.bbox))
+                        train_labels.append(np.array(matches[0].bbox))
+
+
+    return np.vstack(train_data), np.vstack(train_labels)
+
+
+def build_model():
+    model = Sequential()
+    model.add(Dense(32, activation='relu', input_shape=[4]))
+    model.add(Dense(64, activation='relu'))
+    model.add(Dense(64, activation='relu'))
+    model.add(Dense(128, activation='relu'))
+    model.add(Dense(64, activation='relu'))
+    model.add(Dense(64, activation='relu'))
+    model.add(Dense(32, activation='relu'))
+    model.add(Dense(4))
+
+    optimizer = RMSprop(0.01)
+
+    model.compile(loss='mean_squared_error',
+                  optimizer=optimizer,
+                  metrics=['mean_absolute_error', 'mean_squared_error'])
+    return model
+
+
+def predict_bbox(train_data, train_labels):
+    model = build_model()
+    #result = model.predict(train_data)
+
+    class PrintDot(Callback):
+        def on_epoch_end(self, epoch, logs):
+            if epoch % 100 == 0: print('')
+            print('.', end='')
+
+    EPOCHS = 100000
+    history = model.fit(
+        train_data, train_labels, steps_per_epoch=int(len(train_data)*0.8/32),
+        epochs=EPOCHS, validation_split=0.2, validation_steps=int(len(train_data)*0.2/32), verbose=0,
+        callbacks=[PrintDot()])
+
+    print(history.history.keys())
+    print(history.history['loss'][-1])
+
+    # plt.plot(history.history['epoch'], history.history['mean_absolute_error'])
+    # plt.plot(history.history['epoch'], history.history['val_mean_absolute_error'])
+    # plt.title('model accuracy')
+    # plt.ylabel('accuracy')
+    # plt.xlabel('epoch')
+    # plt.legend(['train', 'validation'], loc='upper left')
+    # plt.show()
+    # plt.savefig('first_try.jpg')
+
+    plt.plot(history.history['loss'])
+    plt.plot(history.history['val_loss'])
+    plt.savefig('loss_valloss_2.jpg')
+    plt.close()
+
+
 
 def intersection(u, v):
     """
@@ -16,7 +99,8 @@ def intersection(u, v):
     Returns:
         float: distance between histograms.
     """
-    return 1 - cv2.compareHist(np.array(u), np.array(v), cv2.HISTCMP_INTERSECT)
+    return cv2.compareHist(np.array(u), np.array(v), cv2.HISTCMP_BHATTACHARYYA)
+
 
 def compute_3d_detecs(detections, homography):
     detecs_3d = {}
@@ -62,7 +146,7 @@ def visualize_matches(matched_tracks, cameras_tracks_0, cameras_tracks_1, video_
                     frame_tracks_0[matched_tracks[detec.track_id]] = dict(bbox=detec.bbox)
 
         visualize_tracks_opencv(image, frame_tracks_0, colors, export_frames=True,
-                                export_path="output_frames_5/c001/frame_{:04d}.png".format(n_frame))
+                                export_path="output_frames/c001/frame_{:04d}.png".format(n_frame))
         if n_frame%2 == 0:
             visualize_tracks(image, frame_tracks_0, colors, display=False)
         n_frame += 1
@@ -79,7 +163,7 @@ def visualize_matches(matched_tracks, cameras_tracks_0, cameras_tracks_1, video_
             if detec.frame == n_frame:
                 frame_tracks_1[detec.track_id] = dict(bbox=detec.bbox)
         visualize_tracks_opencv(image, frame_tracks_1, colors, export_frames=True,
-                                export_path="output_frames_example/after/frame_{:04d}.png".format(n_frame-900))
+                                export_path="output_frames/c002/frame_{:04d}.png".format(n_frame))
         if n_frame%2 == 0:
             visualize_tracks(image, frame_tracks_1, colors, display=False)
         n_frame += 1
@@ -100,8 +184,7 @@ def match_tracks(cameras_tracks, homographies, timestamps, framenum, fps, video_
 
         for track_0, det_0 in detecs_3d_0.items():
             for track_1, det_1 in detecs_3d_1.items():
-                if intersection(det_0['histogram'], det_1['histogram']) < 0.5:
-                    dist[track_0].append({track_1: np.linalg.norm(det_0['position'] - det_1['position'])})
+                dist[track_0].append({track_1: intersection(det_0['histogram'], det_1['histogram'])})
 
     print(dist)
     total_distances = []
