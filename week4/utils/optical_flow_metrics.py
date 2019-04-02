@@ -61,7 +61,7 @@ def compute_msen(flow_gt, flow_test, threshold=3):
     flow_err[valid_gt == 0] = 0 
 
     plt.figure(1)
-    plt.imshow(flow_err, cmap="jet")
+    plt.imshow(flow_err, cmap="magma")
     plt.colorbar()
     plt.tick_params(axis='both', labelbottom=False, labelleft=False)
     plt.savefig('results/err_flow.png')

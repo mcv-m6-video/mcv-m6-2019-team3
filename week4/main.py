@@ -2,27 +2,28 @@ from itertools import product
 import numpy as np
 
 from block_matching import block_matching_optical_flow
-from optical_flow import farneback
+from optical_flow import farneback, lucas_kanade
 from utils.optical_flow_metrics import compute_msen, read_flow_data
 from utils.optical_flow_plot import plot_opticalflow_bm, plot_opticalflow_gt, read_opticalflow, read_sequences
 from utils.plotting import create_folder
 from video_stabilizer import video_stabilization, point_feature_matching
 
-sequences_path = 'C:\\Users\\Usuario\\Desktop\\Temporal Sara\\mcv-m6-2019-team3\\datasets\\data_stereo_flow\\training\\image_0\\'
+sequences_path = '../datasets/data_stereo_flow/training/image_0/'
 
-gt_path = 'C:\\Users\\Usuario\\Desktop\\Temporal Sara\\mcv-m6-2019-team3\\datasets\\data_stereo_flow\\training\\flow_noc\\'
-gt_noc = "C:\\Users\\Usuario\\Desktop\\Temporal Sara\\mcv-m6-2019-team3\\datasets\\data_stereo_flow\\training\\flow_noc\\000045_10.png"
+gt_path = '../datasets/data_stereo_flow/training/flow_noc/'
+gt_noc = "../datasets/data_stereo_flow/training/flow_noc/000045_10.png"
 
-opticalflow_path = 'C:\\Users\\Usuario\\Desktop\\Temporal Sara\\mcv-m6-2019-team3\\datasets\\results_opticalflow_kitti\\results\\'
-test = "C:\\Users\\Usuario\\Desktop\\Temporal Sara\\mcv-m6-2019-team3\\datasets\\results_opticalflow_kitti\\results\\LKflow_000045_10.png"
+opticalflow_path = '../datasets/results_opticalflow_kitti/results/'
+test = "../datasets/results_opticalflow_kitti/results/LKflow_000045_10.png"
 
-save_path = 'C:\\Users\\Usuario\\Desktop\\Temporal Sara\\mcv-m6-2019-team3\\week4\\plots'
+save_path = 'plots/'
 
 if __name__ == '__main__':
 
     # Task 1.1
     create_folder(save_path + 'BM_optflow/')
     create_folder(save_path + 'GT_optflow/')
+    create_folder(save_path + 'results/')
 
     sequences = read_sequences(sequences_path)
     flow_gt, flow_test = read_flow_data(gt_noc, test)
@@ -32,7 +33,7 @@ if __name__ == '__main__':
     step_size = [16]
     error_function=['SSD', 'MSD', 'SAD']
 
-
+    """
     for bs, sa, ss, ef in list(product(block_size, search_area, step_size, error_function)):
 
         print('Block size: {0}, search area: {1}, step size: {2}, error function: {3}'.format(bs,sa,ss,ef))
@@ -51,7 +52,7 @@ if __name__ == '__main__':
         #                 save_path=save_path + 'BM_optflow/')
         #plot_opticalflow_gt(gt_opticalflow, first_sequence, title='GT optical flow',
         #                 save_path=save_path + 'GT_optflow/', need_conversion=True)
-
+    """
 
     # Task 1.2
     farneback = farneback(sequences[0], sequences[1])
@@ -60,15 +61,22 @@ if __name__ == '__main__':
     print("MSEN: {}".format(msen))
     print("PEPN: {}".format(pepn))
 
+    #lucas_kanade = lucas_kanade(sequences[0], sequences[1])
+    #msen, pepn = compute_msen(flow_gt, lucas_kanade)
+
+    #print("MSEN: {}".format(msen))
+    #print("PEPN: {}".format(pepn))
+
     # Task 2.1
 
-    print("Video Stabilization with block matching")
-    save_in_path = 'C:\\Users\\Usuario\\Desktop\\Temporal Sara\\mcv-m6-2019-team3\\datasets\\cat_stab\\piano_in\\'
-    sequences = read_sequences(save_in_path)
-    seq_stabilized = video_stabilization(sequences)
+    #print("Video Stabilization with block matching")
+    #save_in_path = 'C:\\Users\\Usuario\\Desktop\\Temporal Sara\\mcv-m6-2019-team3\\datasets\\cat_stab\\piano_in\\'
+    #sequences = read_sequences(save_in_path)
+    #seq_stabilized = video_stabilization(sequences)
 
     # Task 2.2
 
-    print("Point Feature Matching")
-    video_path = 'C:\\Users\\Usuario\\Desktop\\Temporal Sara\\mcv-m6-2019-team3\\datasets\\cat_stab\\piano.mp4'
-    point_feature_matching(video_path)
+    #print("Point Feature Matching")
+    #video_path = 'C:\\Users\\Usuario\\Desktop\\Temporal Sara\\mcv-m6-2019-team3\\datasets\\cat_stab\\piano.mp4'
+    #point_feature_matching(video_path)
+
