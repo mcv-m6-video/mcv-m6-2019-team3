@@ -6,17 +6,17 @@ from optical_flow import farneback
 from utils.optical_flow_metrics import compute_msen, read_flow_data
 from utils.optical_flow_plot import plot_opticalflow_bm, plot_opticalflow_gt, read_opticalflow, read_sequences
 from utils.plotting import create_folder
+from video_stabilizer import video_stabilization, point_feature_matching
 
+sequences_path = 'C:\\Users\\Usuario\\Desktop\\Temporal Sara\\mcv-m6-2019-team3\\datasets\\data_stereo_flow\\training\\image_0\\'
 
-sequences_path = '../datasets/data_stereo_flow/training/image_0/'
+gt_path = 'C:\\Users\\Usuario\\Desktop\\Temporal Sara\\mcv-m6-2019-team3\\datasets\\data_stereo_flow\\training\\flow_noc\\'
+gt_noc = "C:\\Users\\Usuario\\Desktop\\Temporal Sara\\mcv-m6-2019-team3\\datasets\\data_stereo_flow\\training\\flow_noc\\000045_10.png"
 
-gt_path = '../datasets/data_stereo_flow/training/flow_noc/'
-gt_noc = "../datasets/data_stereo_flow/training/flow_noc/000045_10.png"
+opticalflow_path = 'C:\\Users\\Usuario\\Desktop\\Temporal Sara\\mcv-m6-2019-team3\\datasets\\results_opticalflow_kitti\\results\\'
+test = "C:\\Users\\Usuario\\Desktop\\Temporal Sara\\mcv-m6-2019-team3\\datasets\\results_opticalflow_kitti\\results\\LKflow_000045_10.png"
 
-opticalflow_path = '../datasets/results_opticalflow_kitti/results/'
-test = "../datasets/results_opticalflow_kitti/results/LKflow_000045_10.png"
-
-save_path = 'plots/'
+save_path = 'C:\\Users\\Usuario\\Desktop\\Temporal Sara\\mcv-m6-2019-team3\\week4\\plots'
 
 if __name__ == '__main__':
 
@@ -59,3 +59,16 @@ if __name__ == '__main__':
 
     print("MSEN: {}".format(msen))
     print("PEPN: {}".format(pepn))
+
+    # Task 2.1
+
+    print("Video Stabilization with block matching")
+    save_in_path = 'C:\\Users\\Usuario\\Desktop\\Temporal Sara\\mcv-m6-2019-team3\\datasets\\cat_stab\\piano_in\\'
+    sequences = read_sequences(save_in_path)
+    seq_stabilized = video_stabilization(sequences)
+
+    # Task 2.2
+
+    print("Point Feature Matching")
+    video_path = 'C:\\Users\\Usuario\\Desktop\\Temporal Sara\\mcv-m6-2019-team3\\datasets\\cat_stab\\piano.mp4'
+    point_feature_matching(video_path)
