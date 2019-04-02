@@ -9,7 +9,7 @@ from utils.trajectory import Trajectory
 
 video_path = 'C:\\Users\\Usuario\\Desktop\\Temporal Sara\\mcv-m6-2019-team3\\datasets\\cat_stab\\piano.mp4'
 sequences_path = 'C:\\Users\\Usuario\\Desktop\\Temporal Sara\\mcv-m6-2019-team3\\datasets\\cat_stab\\imgs\\'
-save_path = 'C:\\Users\\Usuario\\Desktop\\Temporal Sara\\mcv-m6-2019-team3\\datasets\\cat_stab\\stab\\'
+save_path = 'C:\\Users\\Usuario\\Desktop\\Temporal Sara\\mcv-m6-2019-team3\\datasets\\output\\'
 
 save_out_path = 'C:\\Users\\Usuario\\Desktop\\Temporal Sara\\mcv-m6-2019-team3\\datasets\\cat_stab\\piano_out_pfm\\'
 save_in_path = 'C:\\Users\\Usuario\\Desktop\\Temporal Sara\\mcv-m6-2019-team3\\datasets\\cat_stab\\piano_in\\'
