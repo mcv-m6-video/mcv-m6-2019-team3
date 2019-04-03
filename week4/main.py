@@ -102,7 +102,8 @@ if __name__ == '__main__':
 
 
     # Task 3.1 in main_tracking.py
-    # Task 3: CVPR challenge
+
+    # Task 3.2: CVPR challenge
     cameras_path = ["../datasets/AICity_data/train/S01/c001/", "../datasets/AICity_data/train/S01/c002/"]
     video_challenge_path = "vdo.avi"
     detections_challenge_path = "det/"
@@ -122,8 +123,6 @@ if __name__ == '__main__':
 
 
     for cam_num, camera in enumerate(cameras_path):
-        #for detector in detectors:
-        #print(detector)
         #detections_list, _ = read_annotations_file(camera + detections_challenge_path + detector, camera + video_challenge_path)
         groundtruth_list[cam_num], _ = read_annotations_file(camera + groundtruth_challenge_path, camera + video_challenge_path)
         #homography_cameras[cam_num] = read_homography_matrix(camera + homography_path)
@@ -140,10 +139,8 @@ if __name__ == '__main__':
                                             display=display_frames, export_frames=export_frames, idf1=False, name_pkl=str(cam_num))
 
         # Compute mAP
-        #compute_mAP(groundtruth_list[cam_num], detected_tracks[cam_num])
+        compute_mAP(groundtruth_list[cam_num], detected_tracks[cam_num])
 
     correspondences = bboxes_correspondences(groundtruth_list, timestamps, framenum, fps)
-    #train_data, train_labels = create_dataset(groundtruth_list, timestamps, framenum, fps)
-    #predict_bbox(train_data, train_labels)
     match_tracks(detected_tracks, homography_cameras, timestamps, framenum, fps, cameras_path[0] + video_challenge_path, cameras_path[1] + video_challenge_path, correspondences)
 
