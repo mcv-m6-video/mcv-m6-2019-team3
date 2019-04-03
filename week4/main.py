@@ -34,7 +34,6 @@ if __name__ == '__main__':
     step_size = [16]
     error_function=['SSD', 'MSD', 'SAD']
 
-
     for bs, sa, ss, ef in list(product(block_size, search_area, step_size, error_function)):
 
         print('Block size: {0}, search area: {1}, step size: {2}, error function: {3}'.format(bs,sa,ss,ef))
@@ -78,6 +77,7 @@ if __name__ == '__main__':
     print("MSEN: {}".format(msen))
     print("PEPN: {}".format(pepn))
 
+
     # Task 2.1
     print("Video Stabilization with block matching")
     save_in_path = '../datasets/cat_stab/piano_in/'
@@ -89,3 +89,4 @@ if __name__ == '__main__':
     video_path = '../datasets/cat_stab/piano.mp4'
     point_feature_matching(video_path)
 
+    # Other implemented method in the L1Stabilizer directory written in Matlab

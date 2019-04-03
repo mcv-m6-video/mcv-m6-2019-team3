@@ -11,6 +11,8 @@ week2/grid_search
 week3/output_frames
 week4/results
 
+
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
