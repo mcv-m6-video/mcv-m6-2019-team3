@@ -90,3 +90,7 @@ if __name__ == '__main__':
     point_feature_matching(video_path)
 
     # Other implemented method in the L1Stabilizer directory written in Matlab
+
+
+    # Task 3.1 in main_tracking.py
+    
