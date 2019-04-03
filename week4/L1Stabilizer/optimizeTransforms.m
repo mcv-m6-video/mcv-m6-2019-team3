@@ -7,7 +7,7 @@ run('~/Repo/m6/cvx/cvx_setup.m');
 n = size(t_transforms, 1);
 
 % Find crop window
-crop_ratio = 1
+crop_ratio = 0.8
 center_x = round(im_size(2) / 2);
 center_y = round(im_size(1) / 2);
 crop_w = round(im_size(2) * crop_ratio);

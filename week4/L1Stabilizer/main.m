@@ -8,7 +8,7 @@ out_dir = '~/Repo/m6/mcv-m6-2019-team3/datasets/cat_stab/cat_matlab/';
 %frame_dir = '~/Repo/m6/mcv-m6-2019-team3/datasets/cat_stab/piano_in/';
 %out_dir = '~/Repo/m6/mcv-m6-2019-team3/datasets/cat_stab/piano_matlab/';
 im_size = [360 480];
-crop_ratio = 1;
+crop_ratio = 0.8;
 
 % Read Images
 im_array = readImages(frame_dir, num_frames);
