@@ -8,9 +8,10 @@ from keras.layers import Dense
 from keras.optimizers import RMSprop
 from keras.callbacks import Callback
 import matplotlib.pyplot as plt
-import pandas as pd
 
 from utils.plotting import visualize_tracks, visualize_tracks_opencv
+from evaluation.bbox_iou import bbox_iou
+
 
 
 def create_dataset(gt_detections, timestamps, framenum, fps):
@@ -33,6 +34,26 @@ def create_dataset(gt_detections, timestamps, framenum, fps):
 
 
     return np.vstack(train_data), np.vstack(train_labels)
+
+
+def bboxes_correspondences(gt_detections, timestamps, framenum, fps):
+    correspondences = []
+
+    #Assume cameras are in order of ascendent timestamp
+    for frame in range(framenum[0]+1):
+        detecs_frame_0 = [detec for detec in gt_detections[0] if detec.frame == frame]
+
+        for cam in range(1, len(framenum)):
+            if frame >= int(timestamps[cam]*fps) and frame <= framenum[cam]:
+                detecs_frame_1 = [detec for detec in gt_detections[1] if detec.frame == frame - int(timestamps[cam]*fps)]
+
+                for detec_0 in detecs_frame_0:
+                    matches = [detec_1 for detec_1 in detecs_frame_1 if detec_1.track_id == detec_0.track_id]
+                    if len(matches) == 1:
+
+                        correspondences.append((detec_0.bbox, matches[0].bbox))
+
+    return correspondences
 
 
 def build_model():
@@ -87,7 +108,6 @@ def predict_bbox(train_data, train_labels):
     plt.close()
 
 
-
 def intersection(u, v):
     """
     Compare histograms based on their intersection.
@@ -114,6 +134,29 @@ def compute_3d_detecs(detections, homography):
         detecs_3d[detec.track_id] =dict(position=Hinv.dot(pos_2d), histogram=detec.histogram)
 
     return detecs_3d
+
+def match_correspondence(detection, correspondences):
+    highest_IoU = 0
+    for correspondence in correspondences:
+        IoU = bbox_iou(correspondence[0], detection.bbox)
+
+        if IoU > highest_IoU:
+            highest_IoU = IoU
+            best_match = correspondence
+
+    if highest_IoU > 0:
+        return best_match
+    else:
+        return None
+
+
+def get_correspondence_IoU(det_0, det_1, correspondences):
+    closer_det = match_correspondence(det_0, correspondences)
+    if closer_det:
+        closer_det_1 = closer_det[1]
+        IoU = bbox_iou(closer_det_1, det_1.bbox)
+        return IoU
+    return 0
 
 
 def optimize_matching(match_tracks):
@@ -169,28 +212,29 @@ def visualize_matches(matched_tracks, cameras_tracks_0, cameras_tracks_1, video_
         n_frame += 1
 
 
-def match_tracks(cameras_tracks, homographies, timestamps, framenum, fps, video_path_0, video_path_1):
+def match_tracks(cameras_tracks, homographies, timestamps, framenum, fps, video_path_0, video_path_1, correspondences):
     dist = defaultdict(list)
 
     #Assume cameras are in order of ascendent timestamp
     for frame in range(framenum[0]+1):
         detecs_frame_0 = [detec for detec in cameras_tracks[0] if detec.frame == frame]
-        detecs_3d_0 = compute_3d_detecs(detecs_frame_0, homographies[0])
+        #detecs_3d_0 = compute_3d_detecs(detecs_frame_0, homographies[0])
 
         for cam in range(1, len(framenum)):
             if frame >= int(timestamps[cam]*fps) and frame <= framenum[cam]:
                 detecs_frame_1 = [detec for detec in cameras_tracks[1] if detec.frame == frame - int(timestamps[cam]*fps)]
-                detecs_3d_1 = compute_3d_detecs(detecs_frame_1, homographies[cam])
+                #detecs_3d_1 = compute_3d_detecs(detecs_frame_1, homographies[cam])
 
-        for track_0, det_0 in detecs_3d_0.items():
-            for track_1, det_1 in detecs_3d_1.items():
-                dist[track_0].append({track_1: intersection(det_0['histogram'], det_1['histogram'])})
+        for det_0 in detecs_frame_0:
+            for det_1 in detecs_frame_1:
+                dist[det_0.track_id].append({det_1.track_id: (intersection(det_0.histogram, det_1.histogram), get_correspondence_IoU(det_0, det_1, correspondences))}) #dict of tuples (hist intersection, correspondence IoU)
 
-    print(dist)
     total_distances = []
     for key, dist_list in dist.items():
         for item in dist_list:
-            total_distances.append(float(max(item.values())))
+            d = tuple(item.values())[0]
+            total_distances.append(float(d[0])) #histograms
+
 
     print(total_distances)
     max_dist = max(total_distances)
@@ -202,15 +246,41 @@ def match_tracks(cameras_tracks, homographies, timestamps, framenum, fps, video_
 
     threshold = average
 
-    match_tracks = {}
-
+    candidates = defaultdict(list)
     for track_0, dist_list in dist.items():
+        for track_1_key in dist_list:
+            k = list(track_1_key.keys())
+            track_1 = k[0]
+            d = tuple(track_1_key.values())[0]
+            if float(d[0]) < threshold:
+                candidates[track_0].append(track_1)
+
+    match_tracks = {}
+    for track_0, dist_list in dist.items():
+        possible_tracks = []
+        max_IoU = 0
         cnt = Counter()
-        for list_item in dist_list:
-            for i in list_item:
-                if list_item[i] < threshold:
-                    cnt[i] += 1
-        match_tracks[track_0] = cnt
+        for track_1_key in dist_list:
+            k = list(track_1_key.keys())
+            track_1 = k[0]
+            if track_1 in candidates[track_0]:
+                possible_tracks.append(track_1)
+                d = tuple(track_1_key.values())[0]
+                if float(d[1]) > max_IoU:
+                    max_IoU = float(d[1])
+                    best_track = track_1
+        # if max_IoU == 1:
+        #     cnt[best_track] += 1
+        for track_pos in possible_tracks:
+            if max_IoU > 0:
+                if track_pos == best_track:
+                    cnt[track_pos] += 1
+            else:
+                cnt[track_pos] += 1
+        #else:
+        #    for track_pos in possible_tracks:
+        #        cnt[track_pos] += 1
+        match_tracks[track_0] =cnt
 
     print(match_tracks)
 

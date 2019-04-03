@@ -6,7 +6,7 @@ import cv2
 import matplotlib.pyplot as plt
 
 
-def plot_opticalflow_gt(opticalflow, sequence, step=10, title='', save_path='plots/', need_conversion=False):
+def plot_opticalflow_gt(opticalflow, sequence, step=50, title='', save_path='plots/', need_conversion=False):
     for ind, image in enumerate(opticalflow):
         image = cv2.resize(image, (0, 0), fx=1./step, fy=1./step)
         if need_conversion:
@@ -49,19 +49,16 @@ def plot_opticalflow_gt(opticalflow, sequence, step=10, title='', save_path='plo
         plt.close()
 
 
-def plot_opticalflow_bm(flow, sequence, step=10, title='', save_path='../plots/'):
-    #fu = (flow[:, :, 0] - 2. ** 15) / 64
-    #fv = (flow[:, :, 1] - 2. ** 15) / 64
-    #flow = np.transpose(np.array([fu, fv]))
-    U = np.transpose(flow[:, :, 0])
-    V = np.transpose(flow[:, :, 1])
+def plot_opticalflow_bm(flow, sequence, step=50, title='', save_path='../plots/'):
+    U = flow[:, :, 0]
+    V = flow[:, :, 1]
 
-    w, h = flow.shape[:2]
+    h, w = flow.shape[:2]
 
     maxOF = max(np.max(U), np.max(V))
     print(maxOF)
 
-    x, y = np.meshgrid(np.arange(0, w*step, step), np.arange(0, h*step, step))
+    x, y = np.meshgrid(np.arange(0, w), np.arange(0, h))
 
     flow_color = flow_to_color(flow)
 
@@ -71,16 +68,36 @@ def plot_opticalflow_bm(flow, sequence, step=10, title='', save_path='../plots/'
     plt.show()
     plt.close()
 
-    plt.imshow(sequence[0])
+    plt.imshow(sequence, cmap='gray')
     M = np.hypot(U, V)
-    plt.quiver(x, y, U, -V, M, scale=maxOF*20, alpha=1, width=0.005)
+    plt.quiver(
+        x[::step, ::step],
+        y[::step, ::step],
+        U[::step, ::step],
+        V[::step, ::step],
+        M[::step, ::step],
+        pivot='tail',
+        units='xy',
+        angles='xy',
+        scale_units='xy',
+    )
     plt.title(title)
     plt.savefig(save_path + title[:2] + '_colorimage' + '.png')
     plt.show()
     plt.close()
 
-    plt.imshow(sequence[0])
-    plt.quiver(x, y, U, -V, scale=maxOF*10, alpha=1, color='r')
+    plt.imshow(sequence, cmap='gray')
+    plt.quiver(x[::step, ::step],
+        y[::step, ::step],
+        U[::step, ::step],
+        V[::step, ::step],
+        M[::step, ::step],
+        pivot='tail',
+        units='xy',
+        color='r',
+        angles='xy',
+        scale_units='xy',
+    )
     plt.title(title)
     plt.savefig(save_path + title[:2] + '_redimage' + '.png')
     plt.show()
@@ -226,8 +243,11 @@ def flow_to_color(flow_uv, clip_flow=None, convert_to_bgr=False):
     if clip_flow is not None:
         flow_uv = np.clip(flow_uv, 0, clip_flow)
 
-    u = np.transpose(flow_uv[:,:,0])
-    v = np.transpose(flow_uv[:,:,1])
+    #u = np.transpose(flow_uv[:,:,0])
+    #v = np.transpose(flow_uv[:,:,1])
+
+    u = flow_uv[:, :, 0]
+    v = flow_uv[:,:,1]
 
     rad = np.sqrt(np.square(u) + np.square(v))
     rad_max = np.max(rad)

@@ -4,6 +4,7 @@ from matplotlib import pyplot as plt
 import matplotlib.patches as mpatches
 import motmetrics as mm
 from tqdm import tqdm
+import pickle
 
 from evaluation.bbox_iou import bbox_iou
 from utils.detection import Detection
@@ -118,24 +119,33 @@ def predict_position(image, track):
 
 def update_tracks(image, tracks, detections, frame_tracks):
     unused_detections = detections
+    unused_tracks = [track.id for track in tracks]
+    IoU_relations = []
     for track in tracks:
         if track.time_since_update < 20:
             if track.time_since_update > 0 and len(track.detections) > 1:
                 last_bbox = predict_position(image, track)
             else:
                 last_bbox = track.detections[-1].bbox
-            match_detection = match_next_bbox(image, last_bbox, unused_detections)
-            if match_detection is not None:
-                unused_detections.remove(match_detection)
-                track.detections.append(match_detection)
-                frame_tracks[track.id] = dict(bbox=match_detection.bbox, confidence=match_detection.confidence)
-                track.hits +=1
-                if track.time_since_update == 0:
-                    track.hit_streak += 1
-                track.time_since_update = 0
-            else:
-                track.time_since_update += 1
-                track.hit_streak = 0
+            IoU_relations=get_IoU_relation(image, track, last_bbox, unused_detections, IoU_relations)
+    for relation in sorted(IoU_relations, key=lambda relation: relation[2], reverse=True):
+        track = relation[0]
+        match_detection = relation[1]
+        if (match_detection in unused_detections and track.id in unused_tracks):
+            unused_detections.remove(match_detection)
+            unused_tracks.remove(track.id)
+            track.detections.append(match_detection)
+            frame_tracks[track.id] = dict(bbox=match_detection.bbox, confidence=match_detection.confidence)
+            track.hits += 1
+            if track.time_since_update == 0:
+                track.hit_streak += 1
+            track.time_since_update = 0
+
+    for ut in unused_tracks:
+        track = next((x for x in tracks if x.id == ut), None)
+        track.time_since_update +=1
+        track.hit_streak = 0
+
     return tracks, unused_detections, frame_tracks
 
 
@@ -154,7 +164,15 @@ def match_next_bbox(image, last_bbox, unused_detections):
         return None
 
 
-def track_objects(video_path, detections_list, gt_list, display = False, export_frames = False, idf1 = True):
+def get_IoU_relation(image, track, last_bbox, unused_detections, IoU_relation):
+    for detection in unused_detections:
+        IoU = bbox_iou(last_bbox, detection.bbox)
+        if IoU > 0 and color_check(image, last_bbox, detection.bbox) and ratio_check(last_bbox, detection.bbox):
+            IoU_relation.append((track, detection, IoU))
+    return IoU_relation
+
+
+def track_objects(video_path, detections_list, gt_list, display = False, export_frames = False, idf1 = True, save_pkl=True, name_pkl=''):
 
     colors = np.random.rand(500, 3)  # used only for display
     tracks = []
@@ -225,5 +243,9 @@ def track_objects(video_path, detections_list, gt_list, display = False, export_
         mh = mm.metrics.create()
         summary = mh.compute(acc, metrics=mm.metrics.motchallenge_metrics, name='acc')
         print(summary)
+
+    if save_pkl:
+        with open(name_pkl+'.pkl', 'wb') as f:
+            pickle.dump(new_detections, f)
 
     return new_detections
