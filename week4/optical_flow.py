@@ -1,6 +1,12 @@
 import cv2
 import numpy as np
 
+import pyflow
+
+def pyflow(frame1, frame2):
+
+    u, v, im2W = pyflow.coarse2fine_flow(frame1, frame2, 0.012, 0.75, 20, 7, 1, 30, 1)
+    return np.concatenate((u[..., None], v[..., None]), axis=2)
 
 def farneback(frame1, frame2):
 
