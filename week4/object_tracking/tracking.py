@@ -10,6 +10,7 @@ from evaluation.bbox_iou import bbox_iou
 from utils.detection import Detection
 from utils.plotting import visualize_tracks, visualize_tracks_opencv
 from utils.track import Track
+from optical_flow_tracking import TrackingOF
 
 
 def intersection(u, v):
@@ -172,12 +173,13 @@ def get_IoU_relation(image, track, last_bbox, unused_detections, IoU_relation):
     return IoU_relation
 
 
-def track_objects(video_path, detections_list, gt_list, display = False, export_frames = False, idf1 = True, save_pkl=True, name_pkl=''):
+def track_objects(video_path, detections_list, gt_list, of_track : TrackingOF, display = False, export_frames = False, idf1 = True, save_pkl=True, name_pkl=''):
 
     colors = np.random.rand(500, 3)  # used only for display
     tracks = []
     max_track = 0
     new_detections = []
+    of_detections = []
 
     if idf1:
         acc = mm.MOTAccumulator(auto_id=True)
@@ -213,10 +215,11 @@ def track_objects(video_path, detections_list, gt_list, display = False, export_
             bbox = value['bbox']
             conf = value['confidence']
             detec_bboxes.append(bbox)
-            new_detections.append(Detection(n_frame, 'car', bbox[0], bbox[1], bbox[2] - bbox[0],
+            cd = Detection(n_frame, 'car', bbox[0], bbox[1], bbox[2] - bbox[0],
                                             bbox[3] - bbox[1], conf, track_id=key,
-                                            histogram=rgb_histogram(image[int(bbox[1]):int(bbox[3]), int(bbox[0]):int(bbox[2]), :])))
-
+                                            histogram=rgb_histogram(image[int(bbox[1]):int(bbox[3]), int(bbox[0]):int(bbox[2]), :]))
+            new_detections.append(cd)
+        of_detections.append(of_track.check_optical_flow(new_detections, n_frame))
 
         gt_bboxes = []
         gt_ids = []

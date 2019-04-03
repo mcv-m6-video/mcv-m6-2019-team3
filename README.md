@@ -19,6 +19,15 @@
   <img src="https://github.com/mcv-m6-video/mcv-m6-2019-team3/blob/master/week3/images/tracking_overlap.gif">
 </div>
 
+## Week 4: Optical Flow and Video Stabilization
+
+<div align="center">
+  <img src="https://github.com/mcv-m6-video/mcv-m6-2019-team3/blob/master/week4/images/optical_flow_frames.gif">
+  <img src="https://github.com/mcv-m6-video/mcv-m6-2019-team3/blob/master/week4/images/pyflow_output.png">
+  <img src="https://github.com/mcv-m6-video/mcv-m6-2019-team3/blob/master/week4/images/cat_original.gif">
+  <img src="https://github.com/mcv-m6-video/mcv-m6-2019-team3/blob/master/week4/images/cat_stabilized.gif">
+</div>
+
 ## Team 3
 
 - Gemma Canet Tarrés
@@ -35,15 +44,12 @@ pip install -r requirements.txt
 
 ```
 .
-├── annotations/              
+├── annotations/
 ├── datasets/
 ├── requirements.txt    # python dependencies
 ├── week1/
 ├── week2/
-└── week3/
-    ├── evaluation/
-    ├── main.py
-    ├── notebooks/
-    ├── processing/
-    └── util/
+├── week3/
+└── week4/
+
 ```
