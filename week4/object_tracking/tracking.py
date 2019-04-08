@@ -173,7 +173,7 @@ def get_IoU_relation(image, track, last_bbox, unused_detections, IoU_relation):
     return IoU_relation
 
 
-def track_objects(video_path, detections_list, gt_list, of_track : TrackingOF, display = False, export_frames = False, idf1 = True, save_pkl=True, name_pkl=''):
+def track_objects(video_path, detections_list, gt_list, optical_flow = False, of_track= TrackingOF, display = False, export_frames = False, idf1 = True, save_pkl=True, name_pkl=''):
 
     colors = np.random.rand(500, 3)  # used only for display
     tracks = []
@@ -219,7 +219,8 @@ def track_objects(video_path, detections_list, gt_list, of_track : TrackingOF, d
                                             bbox[3] - bbox[1], conf, track_id=key,
                                             histogram=rgb_histogram(image[int(bbox[1]):int(bbox[3]), int(bbox[0]):int(bbox[2]), :]))
             new_detections.append(cd)
-        of_detections.append(of_track.check_optical_flow(new_detections, n_frame))
+        if optical_flow:
+            of_detections.append(of_track.check_optical_flow(new_detections, n_frame))
 
         gt_bboxes = []
         gt_ids = []
