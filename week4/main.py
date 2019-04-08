@@ -3,6 +3,7 @@ import numpy as np
 import os
 import pickle
 
+# Optical flow
 from block_matching import block_matching_optical_flow
 from optical_flow import pyflow, farneback, lucas_kanade
 from utils.optical_flow_metrics import compute_msen, read_flow_data
@@ -10,6 +11,7 @@ from utils.optical_flow_plot import plot_opticalflow_gt, plot_opticalflow_bm, re
 from utils.plotting import create_folder
 from video_stabilizer import video_stabilization, point_feature_matching
 
+# Tracking
 from evaluation.evaluation_funcs import compute_mAP
 from object_tracking.tracking import track_objects
 from object_tracking.multi_camera import match_tracks, create_dataset, predict_bbox, bboxes_correspondences
@@ -17,6 +19,7 @@ from utils.plotting import draw_video_bboxes
 from utils.reading import read_annotations_file, read_homography_matrix
 from object_tracking.kalman_tracking import kalman_track_objects
 from utils.detection import Detection
+
 sequences_path = '../datasets/data_stereo_flow/training/image_0/'
 
 gt_path = '../datasets/data_stereo_flow/training/flow_noc/'
