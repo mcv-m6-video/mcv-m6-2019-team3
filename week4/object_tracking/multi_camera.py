@@ -1,3 +1,4 @@
+import os
 import cv2
 import numpy as np
 from numpy.linalg import inv
@@ -8,10 +9,11 @@ from keras.layers import Dense
 from keras.optimizers import RMSprop
 from keras.callbacks import Callback
 import matplotlib.pyplot as plt
+import matplotlib.patches as mpatches
 
 from utils.plotting import visualize_tracks, visualize_tracks_opencv
 from evaluation.bbox_iou import bbox_iou
-
+from utils.reading import read_homography_matrix
 
 
 def create_dataset(gt_detections, timestamps, framenum, fps):
@@ -135,6 +137,42 @@ def compute_3d_detecs(detections, homography):
 
     return detecs_3d
 
+
+def apply_homography_to_point(x, y, H1, H2):
+    pos_1 = np.array([x, y, 1])
+    det_0_hom = inv(H1).dot(pos_1)
+    det_0_hom = np.array([det_0_hom[0] / det_0_hom[2], det_0_hom[1] / det_0_hom[2], 1])
+    det_1_hom = H2.dot(det_0_hom)
+
+    return [det_1_hom[0]/det_1_hom[2], det_1_hom[1]/det_1_hom[2], 1]
+
+
+def get_homography_IoU(det_0, det_1, homography1, homography2):
+
+    minc, minr, maxc, maxr = det_0.bbox
+    H1 = np.array(homography1)
+    H2 = np.array(homography2)
+
+    x = minc
+    y = maxr
+    det_1_hom = apply_homography_to_point(x, y, H1, H2)
+
+    x_br = maxc
+    y_br = maxr
+    det_1_hom_br = apply_homography_to_point(x_br, y_br, H1, H2)
+
+
+    original_ratio = (maxr - minr)/(maxc - minc) #height/width of bbox
+    width_transformed = abs(det_1_hom[0] - det_1_hom_br[0])
+    height_transformed = original_ratio*width_transformed
+
+    predicted_bbox_1 = [min(det_1_hom[0],det_1_hom_br[0]), min(det_1_hom[1],det_1_hom_br[1])-height_transformed, max(det_1_hom[0],det_1_hom_br[0]), max(det_1_hom[1],det_1_hom_br[1])]
+
+    IoU = bbox_iou(det_1.bbox, predicted_bbox_1)
+
+    return IoU
+
+
 def match_correspondence(detection, correspondences):
     highest_IoU = 0
     for correspondence in correspondences:
@@ -219,15 +257,15 @@ def match_tracks(cameras_tracks, homographies, timestamps, framenum, fps, video_
     for frame in range(framenum[0]+1):
         detecs_frame_0 = [detec for detec in cameras_tracks[0] if detec.frame == frame]
         #detecs_3d_0 = compute_3d_detecs(detecs_frame_0, homographies[0])
-
         for cam in range(1, len(framenum)):
-            if frame >= int(timestamps[cam]*fps) and frame <= framenum[cam]:
-                detecs_frame_1 = [detec for detec in cameras_tracks[1] if detec.frame == frame - int(timestamps[cam]*fps)]
-                #detecs_3d_1 = compute_3d_detecs(detecs_frame_1, homographies[cam])
+            for frame2 in range(frame - int(timestamps[cam]*fps)-5, frame - int(timestamps[cam]*fps) + 6):
+                if frame2 >= 0 and frame2 <= framenum[cam]:
+                    detecs_frame_1 = [detec for detec in cameras_tracks[1] if detec.frame == frame2]
+                    #detecs_3d_1 = compute_3d_detecs(detecs_frame_1, homographies[cam])
 
-        for det_0 in detecs_frame_0:
-            for det_1 in detecs_frame_1:
-                dist[det_0.track_id].append({det_1.track_id: (intersection(det_0.histogram, det_1.histogram), get_correspondence_IoU(det_0, det_1, correspondences))}) #dict of tuples (hist intersection, correspondence IoU)
+                    for det_0 in detecs_frame_0:
+                        for det_1 in detecs_frame_1:
+                            dist[det_0.track_id].append({det_1.track_id: (intersection(det_0.histogram, det_1.histogram), get_homography_IoU(det_0, det_1, homographies[0], homographies[1]))}) #dict of tuples (hist intersection, correspondence IoU)
 
     total_distances = []
     for key, dist_list in dist.items():
@@ -302,12 +340,80 @@ def lon_lat_to_cartesian(lon, lat, R = 6378137):
     z = R * np.sin(lat_r)
     return x,y,z
 
+#
+# if __name__ == '__main__':
+#     x1, y1, z1 = lon_lat_to_cartesian(42.525821, -90.723853)
+#     x2, y2, z2 = lon_lat_to_cartesian(42.525473, -90.723319)
+#
+#     print('camera1: {0}, {1}, {2}'.format(x1, y1, z1))
+#     print('camera2: {0}, {1}, {2}'.format(x2, y2, z2))
+#
+
 
 if __name__ == '__main__':
-    x1, y1, z1 = lon_lat_to_cartesian(42.525821, -90.723853)
-    x2, y2, z2 = lon_lat_to_cartesian(42.525473, -90.723319)
+    frame_path_1 = '../video_frames/c001/frame_0357.png'
+    bbox_1 = [474,496,(474+651),(496+290)]
+    print(bbox_1)
+    frame_path_2 = '../video_frames/c002/frame_0338.png'
+    homography_path = "calibration.txt"
+    camera1 = "../../datasets/AICity_data/train/S01/c001/"
+    camera2 = "../../datasets/AICity_data/train/S01/c002/"
+    homography_path_start = "../../datasets/calibration/"
 
-    print('camera1: {0}, {1}, {2}'.format(x1, y1, z1))
-    print('camera2: {0}, {1}, {2}'.format(x2, y2, z2))
+    homography1 = read_homography_matrix(homography_path_start + camera1[(len(camera1)-5):] + homography_path)
+    homography2 = read_homography_matrix(homography_path_start + camera2[(len(camera2)-5):] + homography_path)
+
+    image1 = cv2.imread(frame_path_1)
+    fig, ax = plt.subplots()
+    ax.imshow(image1)
+
+    minc, minr, maxc, maxr = bbox_1
+    rect = mpatches.Rectangle((minc, minr), maxc - minc + 1, maxr - minr + 1, fill=False, edgecolor='green', linewidth=4)
+    ax.add_patch(rect)
+    plt.show()
+
+    H1 = np.array(homography1)
+    H2 = np.array(homography2)
+    minc, minr, maxc, maxr = bbox_1
+    h, w = image1.shape[:2]
+    x = minc
+    y = maxr
+
+    det_1_hom = apply_homography_to_point(x, y, H1, H2)
+
+    x_br = maxc
+    y_br = maxr
+    det_1_hom_br = apply_homography_to_point(x_br, y_br, H1, H2)
+
+    print('Left: {}'.format(det_1_hom))
+    print('Right: {}'.format(det_1_hom_br))
+    print('')
+
+
+    original_ratio = (maxr - minr)/(maxc - minc) #height/width of bbox
+    width_transformed = abs(det_1_hom[0] - det_1_hom_br[0])
+    height_transformed = original_ratio*width_transformed
+
+    predicted_bbox_1 = [min(det_1_hom[0],det_1_hom_br[0]), min(det_1_hom[1],det_1_hom_br[1])-height_transformed, max(det_1_hom[0],det_1_hom_br[0]), max(det_1_hom[1],det_1_hom_br[1])]
+
+
+    image2 = cv2.imread(frame_path_2)
+    h,w = image2.shape[:2]
+    fig, ax = plt.subplots()
+    ax.imshow(image2)
+    gt_bbox = [1163,420,(1163+524),(420+245)]
+    predicted_bbox_1 = [predicted_bbox_1[0], predicted_bbox_1[1], predicted_bbox_1[2], predicted_bbox_1[3]]
+    print('Predicted bbox: {}'.format(predicted_bbox_1))
+    print('Ground truth bbox: {}'.format(gt_bbox))
+    minc, minr, maxc, maxr = gt_bbox
+    rect = mpatches.Rectangle((minc, minr), maxc - minc + 1, maxr - minr + 1, fill=False, edgecolor='green',
+                              linewidth=4)
+    ax.add_patch(rect)
+    minc, minr, maxc, maxr = predicted_bbox_1
+    rect = mpatches.Rectangle((minc, minr), maxc - minc + 1, maxr - minr + 1, fill=False, edgecolor='red',
+                              linewidth=4)
+    ax.add_patch(rect)
+    plt.show()
+
 
 
