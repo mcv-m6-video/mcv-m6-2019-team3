@@ -16,8 +16,8 @@ dataset_path = os.path.join(repo_path, 'datasets', 'aic19-track1-mtmc-train')
 test_path = os.path.join(dataset_path, 'train', 'S03')
 test_sequences = ['c010', 'c011', 'c012', 'c013', 'c014', 'c015']
 
-# pruebas con una sola secuencia
-test_sequences = ['c010']
+# para pruebas con una sola secuencia
+# test_sequences = ['c010']
 
 # Flags
 display_frames = False
@@ -61,13 +61,13 @@ for sequence in test_sequences:
         # Tracking by Overlap
         print("\nComputing tracking by overlap")
         with open("results/metrics.txt", "a") as f:
-            f.write("\nComputing tracking by overlap")
+            f.write("\nComputing tracking by overlap\n")
         detected_tracks = track_objects(video_path, detections, groundtruth_list, display=display_frames, export_frames=export_frames)
 
         # Kalman
         print("\nComputing Kalman tracking")
         with open("results/metrics.txt", "a") as f:
-            f.write("\nComputing Kalman tracking")
+            f.write("\nComputing Kalman tracking\n")
         kalman_tracks = kalman_track_objects(video_path, detections, groundtruth_list, display=display_frames, export_frames=export_frames)
 
     #################################################### Optical Flow

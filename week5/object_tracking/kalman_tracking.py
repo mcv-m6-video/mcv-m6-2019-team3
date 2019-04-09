@@ -83,7 +83,7 @@ def kalman_track_objects(video_path, detections_list, gt_list, display=False, ex
     summary = mh.compute(acc, metrics=mm.metrics.motchallenge_metrics, name='acc')
     print(summary)
     with open("results/metrics.txt", "a") as f:
-        f.write(summary.to_string() + "\n")
+        f.write(summary.to_string() + "\n\n")
 
     return new_detections
 

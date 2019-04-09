@@ -174,7 +174,7 @@ def get_IoU_relation(image, track, last_bbox, unused_detections, IoU_relation):
     return IoU_relation
 
 
-def track_objects(video_path, detections_list, gt_list, optical_flow = False, of_track= TrackingOF, display = False, export_frames = False, idf1 = True, save_pkl=True, name_pkl=''):
+def track_objects(video_path, detections_list, gt_list, optical_flow = False, of_track= TrackingOF, display = False, export_frames = False, idf1 = True, save_pkl=False, name_pkl=''):
 
     np.set_printoptions(threshold=sys.maxsize)
     colors = np.random.rand(500, 3)  # used only for display
