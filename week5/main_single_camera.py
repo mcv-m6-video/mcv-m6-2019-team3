@@ -34,7 +34,7 @@ for sequence in test_sequences:
     # Read groundtruth
     gt_path = os.path.join(test_path, sequence, 'gt', 'gt.txt')
     groundtruth_list = read_annotations_from_txt(gt_path)
-    print(groundtruth_list)
+    #print(groundtruth_list)
 
     #################################################### Object Detection
     # Save all detection results in an array
