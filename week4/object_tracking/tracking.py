@@ -252,4 +252,4 @@ def track_objects(video_path, detections_list, gt_list, optical_flow = False, of
         with open(name_pkl+'.pkl', 'wb') as f:
             pickle.dump(new_detections, f)
 
-    return new_detections
+    return new_detections, tracks

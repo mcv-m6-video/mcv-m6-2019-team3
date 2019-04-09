@@ -82,6 +82,7 @@ class TrackingOF:
                 ch = cv2.waitKey(1)
                 if ch == 27:
                     break
+
     def check_optical_flow(self, detections_on_frame, frame_id):
         if frame_id==0:
             return detections_on_frame
@@ -95,6 +96,7 @@ class TrackingOF:
                 speed = math.sqrt(relevant_data[0]^2+relevant_data[1]^2)
                 print("Frame: {}, speed: {}".format(frame_id, speed))
             return detections_on_frame
+
 
 def draw_str(dst, target, s):
     x, y = target

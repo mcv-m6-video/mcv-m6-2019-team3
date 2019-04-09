@@ -14,7 +14,7 @@ from video_stabilizer import video_stabilization, point_feature_matching
 # Tracking
 from evaluation.evaluation_funcs import compute_mAP
 from object_tracking.tracking import track_objects
-from object_tracking.multi_camera import match_tracks, create_dataset, predict_bbox, bboxes_correspondences
+from object_tracking.multi_camera import match_tracks_by_frame, create_dataset, predict_bbox, bboxes_correspondences, match_tracks
 from utils.plotting import draw_video_bboxes
 from utils.reading import read_annotations_file, read_homography_matrix
 from object_tracking.kalman_tracking import kalman_track_objects
@@ -121,7 +121,8 @@ if __name__ == '__main__':
     export_frames = False
     load_pkl = True
 
-    detected_tracks = {}
+    tracked_detections = {}
+    tracks_by_camera = {}
     homography_cameras = {}
     groundtruth_list = {}
 
@@ -135,16 +136,17 @@ if __name__ == '__main__':
         if load_pkl and os.path.exists(str(cam_num)+'.pkl'):
             with open(str(cam_num)+'.pkl', 'rb') as p:
                 print("Reading tracks from pkl")
-                detected_tracks[cam_num] = pickle.load(p)
+                tracked_detections[cam_num] = pickle.load(p)
                 print("Tracks loaded\n")
         else:
 
-            detected_tracks[cam_num] = track_objects(camera + video_challenge_path, groundtruth_list[cam_num], groundtruth_list[cam_num],
+            tracked_detections[cam_num], tracks_by_camera[cam_num] = track_objects(camera + video_challenge_path, groundtruth_list[cam_num], groundtruth_list[cam_num],
                                             display=display_frames, export_frames=export_frames, idf1=False, name_pkl=str(cam_num))
 
         # Compute mAP
-        compute_mAP(groundtruth_list[cam_num], detected_tracks[cam_num])
+        compute_mAP(groundtruth_list[cam_num], tracked_detections[cam_num])
 
     correspondences = bboxes_correspondences(groundtruth_list, timestamps, framenum, fps)
-    match_tracks(detected_tracks, homography_cameras, timestamps, framenum, fps, cameras_path[0] + video_challenge_path, cameras_path[1] + video_challenge_path, correspondences)
+    match_tracks(tracks_by_camera, homography_cameras, timestamps, framenum, fps, cameras_path[0] + video_challenge_path, cameras_path[1] + video_challenge_path)
+    match_tracks_by_frame(tracked_detections, homography_cameras, timestamps, framenum, fps, cameras_path[0] + video_challenge_path, cameras_path[1] + video_challenge_path, correspondences)
 

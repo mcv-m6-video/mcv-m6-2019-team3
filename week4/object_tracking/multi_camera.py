@@ -172,6 +172,27 @@ def get_homography_IoU(det_0, det_1, homography1, homography2):
 
     return IoU
 
+def transform_detection(det_0, homography1):
+    minc, minr, maxc, maxr = det_0.bbox
+    H1 = np.array(homography1)
+    H2 = np.array(homography2)
+
+    x = minc
+    y = maxr
+    det_1_hom = apply_homography_to_point(x, y, H1, H2)
+
+    x_br = maxc
+    y_br = maxr
+    det_1_hom_br = apply_homography_to_point(x_br, y_br, H1, H2)
+
+    original_ratio = (maxr - minr) / (maxc - minc)  # height/width of bbox
+    width_transformed = abs(det_1_hom[0] - det_1_hom_br[0])
+    height_transformed = original_ratio * width_transformed
+
+    predicted_bbox_1 = [min(det_1_hom[0], det_1_hom_br[0]), min(det_1_hom[1], det_1_hom_br[1]) - height_transformed,
+                        max(det_1_hom[0], det_1_hom_br[0]), max(det_1_hom[1], det_1_hom_br[1])]
+
+    return predicted_bbox_1
 
 def match_correspondence(detection, correspondences):
     highest_IoU = 0
@@ -213,6 +234,7 @@ def optimize_matching(match_tracks):
 
 def visualize_matches(matched_tracks, cameras_tracks_0, cameras_tracks_1, video_path_0, video_path_1):
     colors = np.random.rand(500, 3)
+    colors[499] = [1, 0, 0]
     capture = cv2.VideoCapture(video_path_0)
     n_frame = 0
 
@@ -225,6 +247,8 @@ def visualize_matches(matched_tracks, cameras_tracks_0, cameras_tracks_1, video_
             if detec.frame == n_frame:
                 if matched_tracks.get(detec.track_id):
                     frame_tracks_0[matched_tracks[detec.track_id]] = dict(bbox=detec.bbox)
+                else:
+                    frame_tracks_0[499] = dict(bbox=detec.bbox)
 
         visualize_tracks_opencv(image, frame_tracks_0, colors, export_frames=True,
                                 export_path="output_frames/c001/frame_{:04d}.png".format(n_frame))
@@ -242,7 +266,11 @@ def visualize_matches(matched_tracks, cameras_tracks_0, cameras_tracks_1, video_
             break
         for detec in cameras_tracks_1:
             if detec.frame == n_frame:
-                frame_tracks_1[detec.track_id] = dict(bbox=detec.bbox)
+                if detec.track_id in matched_tracks.values():
+                    frame_tracks_1[detec.track_id] = dict(bbox=detec.bbox)
+                else:
+                    frame_tracks_1[499] = dict(bbox=detec.bbox)
+
         visualize_tracks_opencv(image, frame_tracks_1, colors, export_frames=True,
                                 export_path="output_frames/c002/frame_{:04d}.png".format(n_frame))
         if n_frame%2 == 0:
@@ -250,7 +278,21 @@ def visualize_matches(matched_tracks, cameras_tracks_0, cameras_tracks_1, video_
         n_frame += 1
 
 
-def match_tracks(cameras_tracks, homographies, timestamps, framenum, fps, video_path_0, video_path_1, correspondences):
+def match_tracks(cameras_tracks, homographies, timestamps, framenum, fps, video_path_0, video_path_1):
+
+    for camera1 in cameras_tracks:
+        for camera2 in cameras_tracks:
+            if camera2 != camera1:
+                tracks_camera1 = cameras_tracks[camera1]
+                tracks_camera2 = cameras_tracks[camera2]
+                for track1 in tracks_camera1:
+                    transformed_track = []
+                    for detec in track1.detections:
+                        transformed_track.append(transform_detection(detec, homographies[camera1]))
+
+
+
+def match_tracks_by_frame(cameras_tracks, homographies, timestamps, framenum, fps, video_path_0, video_path_1, correspondences):
     dist = defaultdict(list)
 
     #Assume cameras are in order of ascendent timestamp
@@ -310,11 +352,11 @@ def match_tracks(cameras_tracks, homographies, timestamps, framenum, fps, video_
         # if max_IoU == 1:
         #     cnt[best_track] += 1
         for track_pos in possible_tracks:
-            if max_IoU > 0:
+            if max_IoU > 0.30:
                 if track_pos == best_track:
                     cnt[track_pos] += 1
-            else:
-                cnt[track_pos] += 1
+            # else:
+            #     cnt[track_pos] += 1
         #else:
         #    for track_pos in possible_tracks:
         #        cnt[track_pos] += 1
