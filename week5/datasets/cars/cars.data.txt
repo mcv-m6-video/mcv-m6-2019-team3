@@ -1,0 +1,6 @@
+classes= 80
+train=data/cars/train5k.txt
+valid=data/cars/val5k.txt
+names=data/coco.names
+backup=backup/
+eval=coco

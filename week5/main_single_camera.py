@@ -1,13 +1,11 @@
 import os
 import pickle
-
-import numpy as np
-
+import cv2
 from object_tracking.kalman_tracking import kalman_track_objects
 from object_tracking.tracking import track_objects
 from processing.background_subtraction import BackgroundSubtractor
 from utils.reading import read_annotations_from_txt
-
+from utils.filter import filtering_parked,filtering_nms
 
 repo_path = os.path.dirname(os.path.dirname(__file__))
 dataset_path = os.path.join(repo_path, 'datasets', 'aic19-track1-mtmc-train')
@@ -46,15 +44,26 @@ for sequence in test_sequences:
     else:
         detectionsMOG, detectionsMOG2, detectionsGMG = BackgroundSubtractor(video_path)
 
-    detections_array.append(detectionsMOG)
-    detections_array.append(detectionsMOG2)
-    detections_array.append(detectionsGMG)
+    # detections_array.append(detectionsMOG)
+    # detections_array.append(detectionsMOG2)
+    # detections_array.append(detectionsGMG)
 
     # Read CNN detection files
     for network in ['det_mask_rcnn.txt', 'det_ssd512.txt', 'det_yolo3.txt']:
         network_path = os.path.join(test_path, sequence, 'det', network)
         detection = read_annotations_from_txt(network_path)
+        # filtering nms
+        detection = filtering_nms(detection, video_path)
+        # print(detection)
+        # print('STOP 2')
+        # Filtering parked cars
+        detection = filtering_parked(detection, video_path)
+        # print(detection)
+        # print('STOP 3')
         detections_array.append(detection)
+
+
+
 
     #################################################### Tracking
     for detections in detections_array:
