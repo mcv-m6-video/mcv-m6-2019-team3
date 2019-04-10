@@ -5,7 +5,6 @@ import matplotlib.patches as mpatches
 import motmetrics as mm
 from tqdm import tqdm
 import pickle
-import sys
 
 from evaluation.bbox_iou import bbox_iou
 from utils.detection import Detection
@@ -174,12 +173,11 @@ def get_IoU_relation(image, track, last_bbox, unused_detections, IoU_relation):
     return IoU_relation
 
 
-def track_objects(video_path, detections_list, gt_list, optical_flow = False, of_track= TrackingOF, display = False, export_frames = False, idf1 = True, save_pkl=False, name_pkl=''):
+def track_objects(video_path, detections_list, gt_list, optical_flow = False, of_track= TrackingOF, display = False, export_frames = False, idf1 = True, save_pkl=True, name_pkl=''):
 
-    np.set_printoptions(threshold=sys.maxsize)
     colors = np.random.rand(500, 3)  # used only for display
     tracks = []
-    max_track = 0
+    max_track = -1
     new_detections = []
     of_detections = []
 
@@ -248,13 +246,14 @@ def track_objects(video_path, detections_list, gt_list, optical_flow = False, of
         print(acc.mot_events)
         mh = mm.metrics.create()
         summary = mh.compute(acc, metrics=mm.metrics.motchallenge_metrics, name='acc')
-        print(summary)
         with open("results/metrics.txt", "a") as f:
             f.write(summary.to_string() + "\n")
+        print(summary)
 
     if save_pkl:
-        with open(name_pkl+'.pkl', 'wb') as f:
+        with open('detections' + name_pkl+'.pkl', 'wb') as f:
             pickle.dump(new_detections, f)
+        with open('tracks' + name_pkl+'.pkl', 'wb') as f:
+            pickle.dump(tracks, f)
 
-    return new_detections
-
+    return new_detections, tracks

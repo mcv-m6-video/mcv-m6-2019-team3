@@ -1,3 +1,4 @@
+import os
 import cv2
 import numpy as np
 from numpy.linalg import inv
@@ -8,10 +9,12 @@ from keras.layers import Dense
 from keras.optimizers import RMSprop
 from keras.callbacks import Callback
 import matplotlib.pyplot as plt
+import matplotlib.patches as mpatches
 
 from utils.plotting import visualize_tracks, visualize_tracks_opencv
-from evaluation.bbox_iou import bbox_iou
-
+from evaluation.bbox_iou import bbox_iou, bbox_intersection, intersection_over_area, bbox_area
+from utils.reading import read_homography_matrix, read_annotations_file
+from utils.detection import Detection
 
 
 def create_dataset(gt_detections, timestamps, framenum, fps):
@@ -135,6 +138,80 @@ def compute_3d_detecs(detections, homography):
 
     return detecs_3d
 
+
+def apply_homography_to_point(x, y, H1, H2):
+    pos_1 = np.array([x, y, 1])
+    det_0_hom = inv(H1).dot(pos_1)
+    det_0_hom = np.array([det_0_hom[0] / det_0_hom[2], det_0_hom[1] / det_0_hom[2], 1])
+    det_1_hom = H2.dot(det_0_hom)
+
+    return [det_1_hom[0]/det_1_hom[2], det_1_hom[1]/det_1_hom[2], 1]
+
+
+def get_homography_IoU(det_0, det_1, homography1, homography2):
+
+    # minc, minr, maxc, maxr = det_0.bbox
+    # H1 = np.array(homography1)
+    # H2 = np.array(homography2)
+    #
+    # x = minc
+    # y = maxr
+    # det_1_hom = apply_homography_to_point(x, y, H1, H2)
+    #
+    # x_br = maxc
+    # y_br = maxr
+    # det_1_hom_br = apply_homography_to_point(x_br, y_br, H1, H2)
+    #
+    #
+    # original_ratio = (maxr - minr)/(maxc - minc) #height/width of bbox
+    # width_transformed = abs(det_1_hom[0] - det_1_hom_br[0])
+    # height_transformed = original_ratio*width_transformed
+    #
+    # predicted_bbox_1 = [min(det_1_hom[0],det_1_hom_br[0]), min(det_1_hom[1],det_1_hom_br[1])-height_transformed, max(det_1_hom[0],det_1_hom_br[0]), max(det_1_hom[1],det_1_hom_br[1])]
+
+    predicted_correspondence = transform_detection(det_0, homography1, homography2)
+    predicted_bbox_1 = predicted_correspondence.bbox
+    IoU = bbox_iou(det_1.bbox, predicted_bbox_1)
+
+    return IoU
+
+
+def transform_detection(det_0, homography1, homography2):
+    minc, minr, maxc, maxr = det_0.bbox
+    H1 = np.array(homography1)
+    H2 = np.array(homography2)
+
+    x = minc
+    y = maxr
+    det_1_hom = apply_homography_to_point(x, y, H1, H2)
+
+    x_br = maxc
+    y_br = maxr
+    det_1_hom_br = apply_homography_to_point(x_br, y_br, H1, H2)
+
+    original_ratio = (maxr - minr) / (maxc - minc)  # height/width of bbox
+    width_transformed = abs(det_1_hom[0] - det_1_hom_br[0])
+    height_transformed = original_ratio * width_transformed
+
+    predicted_bbox_1 = [min(det_1_hom[0], det_1_hom_br[0]), min(det_1_hom[1], det_1_hom_br[1]) - height_transformed,
+                        max(det_1_hom[0], det_1_hom_br[0]), max(det_1_hom[1], det_1_hom_br[1])]
+
+    predicted_correspondence = Detection(det_0.frame, det_0.label, predicted_bbox_1[0], predicted_bbox_1[1], predicted_bbox_1[2]-predicted_bbox_1[0], predicted_bbox_1[3]-predicted_bbox_1[1], histogram=det_0.histogram)
+    return predicted_correspondence
+
+
+def check_inside_image(detection, h=1080, w=1920):
+    minc, minr, maxc, maxr = detection.bbox
+
+    if minc<0 or minr < 0:
+        return False
+
+    if maxc>w or maxr > h:
+        return False
+
+    return True
+
+
 def match_correspondence(detection, correspondences):
     highest_IoU = 0
     for correspondence in correspondences:
@@ -175,59 +252,170 @@ def optimize_matching(match_tracks):
 
 def visualize_matches(matched_tracks, cameras_tracks_0, cameras_tracks_1, video_path_0, video_path_1):
     colors = np.random.rand(500, 3)
+    colors[499] = [1, 0, 0]
     capture = cv2.VideoCapture(video_path_0)
     n_frame = 0
 
     while capture.isOpened():
-        frame_tracks_0 = {}
+        frame_tracks_0 = defaultdict(list)
         valid, image = capture.read()
         if not valid:
             break
         for detec in cameras_tracks_0:
             if detec.frame == n_frame:
                 if matched_tracks.get(detec.track_id):
-                    frame_tracks_0[matched_tracks[detec.track_id]] = dict(bbox=detec.bbox)
+                    for track2 in matched_tracks[detec.track_id]:
+                        frame_tracks_0[track2].append(detec.bbox)
+                # else:
+                #     frame_tracks_0[499] = dict(bbox=detec.bbox)
 
         visualize_tracks_opencv(image, frame_tracks_0, colors, export_frames=True,
                                 export_path="output_frames/c001/frame_{:04d}.png".format(n_frame))
-        if n_frame%2 == 0:
-            visualize_tracks(image, frame_tracks_0, colors, display=False)
+        # if n_frame%2 == 0:
+        #     visualize_tracks(image, frame_tracks_0, colors, display=False)
         n_frame += 1
 
     capture = cv2.VideoCapture(video_path_1)
     n_frame = 0
 
     while capture.isOpened():
-        frame_tracks_1 = {}
+        frame_tracks_1 = defaultdict(list)
         valid, image = capture.read()
         if not valid:
             break
         for detec in cameras_tracks_1:
             if detec.frame == n_frame:
-                frame_tracks_1[detec.track_id] = dict(bbox=detec.bbox)
+                if any(detec.track_id in lst for lst in matched_tracks.values()):
+                    #if detec.track_id in matched_tracks.values():
+                    frame_tracks_1[detec.track_id].append(detec.bbox)
+                # else:
+                #     frame_tracks_1[499] = dict(bbox=detec.bbox)
+
         visualize_tracks_opencv(image, frame_tracks_1, colors, export_frames=True,
                                 export_path="output_frames/c002/frame_{:04d}.png".format(n_frame))
-        if n_frame%2 == 0:
-            visualize_tracks(image, frame_tracks_1, colors, display=False)
+        # if n_frame%2 == 0:
+        #     visualize_tracks(image, frame_tracks_1, colors, display=False)
         n_frame += 1
 
 
-def match_tracks(cameras_tracks, homographies, timestamps, framenum, fps, video_path_0, video_path_1, correspondences):
+def match_tracks(tracked_detections, cameras_tracks, homographies, timestamps, framenum, fps, video_path_0, video_path_1):
+
+    for camera1 in cameras_tracks:
+        print(camera1)
+        tracks_camera1 = cameras_tracks[camera1]
+        for camera2 in cameras_tracks:
+            print(camera2)
+            if camera2 > camera1:
+                tracks_camera2 = cameras_tracks[camera2]
+                match_tracks_metrics = np.zeros((len(tracks_camera1)+1, len(tracks_camera2)+1))
+                for track1 in tracks_camera1:
+                    transformed_track1 = []
+                    for detec in track1.detections:
+                        transformed_detec = transform_detection(detec, homographies[camera1], homographies[camera2])
+                        if check_inside_image(transformed_detec):
+                            transformed_track1.append(transformed_detec)
+                    for track2 in tracks_camera2:
+                        comparison_bboxes = []
+                        total_area_projected_bboxes = 0
+                        for detec1 in transformed_track1:
+                            total_area_projected_bboxes += bbox_area(detec1.bbox)
+                            for detec2 in track2.detections:
+                                comparison_bboxes.append((detec1.frame, detec2.frame, intersection_over_area(detec1.bbox, detec2.bbox), bbox_intersection(detec1.bbox, detec2.bbox), bbox_area(detec1.bbox)))
+                        sorted_bbox_comparisons = sorted(comparison_bboxes, key=lambda relation: relation[2], reverse=True)
+                        best_match = None
+                        tracks_intersection = 0
+                        area_projected_bboxes = 0
+                        num_matches = 0
+                        for match in sorted_bbox_comparisons:
+                            if match[2] > 0:
+                                if best_match == None:
+                                    best_match = match
+                                    last_id1 = match[0]
+                                    last_id2 = match[1]
+                                    first_id1 = match[0]
+                                    first_id2 = match[1]
+                                    num_matches += 1
+                                    tracks_intersection += match[3]
+                                    area_projected_bboxes += match[4]
+
+                                else:
+                                    id1 = match[0]
+                                    id2 = match[1]
+                                    if id1 > last_id1 and id2 > last_id2:
+                                        last_id1 = id1
+                                        last_id2 = id2
+                                        num_matches += 1
+                                        tracks_intersection += match[3]
+                                        area_projected_bboxes += match[4]
+                                    elif id1 < first_id1 and id2 < first_id2:
+                                        first_id1 = id1
+                                        first_id2 = id2
+                                        num_matches += 1
+                                        tracks_intersection += match[3]
+                                        area_projected_bboxes += match[4]
+
+                        # print(sorted_bbox_comparisons)
+                        # best_match = sorted_bbox_comparisons[0]
+                        # tracks_intersection = 0
+                        # area_projected_bboxes = 0
+                        # id1 = best_match[0]
+                        # id2 = best_match[1]
+                        # num_matches = 0
+                        # possible_matches = [item for item in comparison_bboxes if item[0] == id1 and item[1] == id2]
+                        # while len(possible_matches) == 1:
+                        #     match = possible_matches[0]
+                        #     tracks_intersection += match[3]
+                        #     area_projected_bboxes += match[4]
+                        #     id1 += 1
+                        #     id2 += 1
+                        #     num_matches += 1
+                        #     possible_matches = [item for item in comparison_bboxes if item[0] == id1 and item[1] == id2]
+                        #print(tracks_intersection/area_projected_bboxes)
+                        #print(num_matches)
+                        if total_area_projected_bboxes > 0:
+                            match_tracks_metrics[track1.id][track2.id] = tracks_intersection/total_area_projected_bboxes
+
+
+                candidate_matches_by_location = defaultdict(list)
+
+                # for track1, tracks_distance in enumerate(match_tracks_metrics):
+                #     if np.argmax(tracks_distance) == 56:
+                #         print(np.amax(tracks_distance))
+                #     if float(np.amax(tracks_distance)) > 0.1:
+                #         matched_tracks[track1] = np.argmax(tracks_distance)
+                #     elif np.argmax(tracks_distance) == 56:
+                #         print('NO')
+                # print(matched_tracks)
+
+                for track1, tracks_distance in enumerate(match_tracks_metrics):
+                    print(np.amax(tracks_distance))
+                    if float(np.amax(tracks_distance)) > 0.1:
+                     candidate_matches_by_location[track1].append(np.argmax(tracks_distance))
+                    #for track2, dist in enumerate(tracks_distance):
+                    #    if dist > 0.6:
+                    #        candidate_matches_by_location[track1].append(track2)
+                print(candidate_matches_by_location)
+
+                visualize_matches(candidate_matches_by_location, tracked_detections[camera1], tracked_detections[camera2], video_path_0, video_path_1)
+
+
+
+def match_tracks_by_frame(cameras_tracks, homographies, timestamps, framenum, fps, video_path_0, video_path_1, correspondences):
     dist = defaultdict(list)
 
     #Assume cameras are in order of ascendent timestamp
     for frame in range(framenum[0]+1):
         detecs_frame_0 = [detec for detec in cameras_tracks[0] if detec.frame == frame]
         #detecs_3d_0 = compute_3d_detecs(detecs_frame_0, homographies[0])
-
         for cam in range(1, len(framenum)):
-            if frame >= int(timestamps[cam]*fps) and frame <= framenum[cam]:
-                detecs_frame_1 = [detec for detec in cameras_tracks[1] if detec.frame == frame - int(timestamps[cam]*fps)]
-                #detecs_3d_1 = compute_3d_detecs(detecs_frame_1, homographies[cam])
+            for frame2 in range(frame - int(timestamps[cam]*fps)-5, frame - int(timestamps[cam]*fps) + 6):
+                if frame2 >= 0 and frame2 <= framenum[cam]:
+                    detecs_frame_1 = [detec for detec in cameras_tracks[1] if detec.frame == frame2]
+                    #detecs_3d_1 = compute_3d_detecs(detecs_frame_1, homographies[cam])
 
-        for det_0 in detecs_frame_0:
-            for det_1 in detecs_frame_1:
-                dist[det_0.track_id].append({det_1.track_id: (intersection(det_0.histogram, det_1.histogram), get_correspondence_IoU(det_0, det_1, correspondences))}) #dict of tuples (hist intersection, correspondence IoU)
+                    for det_0 in detecs_frame_0:
+                        for det_1 in detecs_frame_1:
+                            dist[det_0.track_id].append({det_1.track_id: (intersection(det_0.histogram, det_1.histogram), get_homography_IoU(det_0, det_1, homographies[0], homographies[1]))}) #dict of tuples (hist intersection, correspondence IoU)
 
     total_distances = []
     for key, dist_list in dist.items():
@@ -272,11 +460,11 @@ def match_tracks(cameras_tracks, homographies, timestamps, framenum, fps, video_
         # if max_IoU == 1:
         #     cnt[best_track] += 1
         for track_pos in possible_tracks:
-            if max_IoU > 0:
+            if max_IoU > 0.30:
                 if track_pos == best_track:
                     cnt[track_pos] += 1
-            else:
-                cnt[track_pos] += 1
+            # else:
+            #     cnt[track_pos] += 1
         #else:
         #    for track_pos in possible_tracks:
         #        cnt[track_pos] += 1
@@ -302,12 +490,107 @@ def lon_lat_to_cartesian(lon, lat, R = 6378137):
     z = R * np.sin(lat_r)
     return x,y,z
 
+#
+# if __name__ == '__main__':
+#     x1, y1, z1 = lon_lat_to_cartesian(42.525821, -90.723853)
+#     x2, y2, z2 = lon_lat_to_cartesian(42.525473, -90.723319)
+#
+#     print('camera1: {0}, {1}, {2}'.format(x1, y1, z1))
+#     print('camera2: {0}, {1}, {2}'.format(x2, y2, z2))
+#
+
 
 if __name__ == '__main__':
-    x1, y1, z1 = lon_lat_to_cartesian(42.525821, -90.723853)
-    x2, y2, z2 = lon_lat_to_cartesian(42.525473, -90.723319)
+    frame_path_1 = '../video_frames/c001/frame_0357.png'
+    groundtruth_challenge_path = "gt/gt.txt"
+    video_challenge_path = "vdo.avi"
 
-    print('camera1: {0}, {1}, {2}'.format(x1, y1, z1))
-    print('camera2: {0}, {1}, {2}'.format(x2, y2, z2))
+    frame_path_2 = '../video_frames/c002/frame_0338.png'
+    homography_path = "calibration.txt"
+    camera1 = "../../datasets/AICity_data/train/S01/c001/"
+    camera2 = "../../datasets/AICity_data/train/S01/c002/"
+    homography_path_start = "../../datasets/calibration/"
+
+    groundtruth_list, _ = read_annotations_file(camera1 + groundtruth_challenge_path,
+                                                         camera1 + video_challenge_path)
+
+    detecs_car = [detec for detec in groundtruth_list if detec.track_id == 56]
+    print(detecs_car)
+
+
+    homography1 = read_homography_matrix(homography_path_start + camera1[(len(camera1)-5):] + homography_path)
+    homography2 = read_homography_matrix(homography_path_start + camera2[(len(camera2)-5):] + homography_path)
+
+    #image1 = cv2.imread(frame_path_1)
+    #fig, ax = plt.subplots()
+    #ax.imshow(image1)
+    image2 = cv2.imread(frame_path_2)
+    h, w = image2.shape[:2]
+    print('h: {}'.format(h))
+    print("w: {}".format(w))
+    fig, ax = plt.subplots()
+    ax.imshow(image2)
+    for detec in detecs_car:
+        bbox_1 = detec.bbox
+        print(bbox_1)
+
+        #minc, minr, maxc, maxr = bbox_1
+        #rect = mpatches.Rectangle((minc, minr), maxc - minc + 1, maxr - minr + 1, fill=False, edgecolor='green', linewidth=4)
+        #ax.add_patch(rect)
+        #plt.show()
+
+        H1 = np.array(homography1)
+        H2 = np.array(homography2)
+        minc, minr, maxc, maxr = bbox_1
+        #h, w = image1.shape[:2]
+        x = minc
+        y = maxr
+
+        det_1_hom = apply_homography_to_point(x, y, H1, H2)
+
+        x_br = maxc
+        y_br = maxr
+        det_1_hom_br = apply_homography_to_point(x_br, y_br, H1, H2)
+
+        print('Left: {}'.format(det_1_hom))
+        print('Right: {}'.format(det_1_hom_br))
+        print('')
+
+
+        original_ratio = (maxr - minr)/(maxc - minc) #height/width of bbox
+        width_transformed = abs(det_1_hom[0] - det_1_hom_br[0])
+        height_transformed = original_ratio*width_transformed
+
+        predicted_bbox_1 = [min(det_1_hom[0],det_1_hom_br[0]), min(det_1_hom[1],det_1_hom_br[1])-height_transformed, max(det_1_hom[0],det_1_hom_br[0]), max(det_1_hom[1],det_1_hom_br[1])]
+
+
+
+        #gt_bbox = [1163,420,(1163+524),(420+245)]
+        predicted_bbox_1 = [predicted_bbox_1[0], predicted_bbox_1[1], predicted_bbox_1[2], predicted_bbox_1[3]]
+        print('Predicted bbox: {}'.format(predicted_bbox_1))
+        #print('Ground truth bbox: {}'.format(gt_bbox))
+        #minc, minr, maxc, maxr = gt_bbox
+        #rect = mpatches.Rectangle((minc, minr), maxc - minc + 1, maxr - minr + 1, fill=False, edgecolor='green',
+        #                          linewidth=4)
+        #ax.add_patch(rect)
+        minc, minr, maxc, maxr = predicted_bbox_1
+        rect = mpatches.Rectangle((minc, minr), maxc - minc + 1, maxr - minr + 1, fill=False, edgecolor='red',
+                                  linewidth=4)
+        ax.add_patch(rect)
+
+    groundtruth_list2, _ = read_annotations_file(camera2 + groundtruth_challenge_path,
+                                                camera2 + video_challenge_path)
+    detecs_car2 = [detec for detec in groundtruth_list2 if detec.track_id == 56]
+
+    for detec in detecs_car2:
+        bbox_1 = detec.bbox
+
+        minc, minr, maxc, maxr = bbox_1
+
+        rect = mpatches.Rectangle((minc, minr), maxc - minc + 1, maxr - minr + 1, fill=False, edgecolor='green',
+                                  linewidth=4)
+        ax.add_patch(rect)
+    plt.show()
+
 
 

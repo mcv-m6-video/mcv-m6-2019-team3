@@ -144,5 +144,8 @@ def read_homography_matrix(hom_path):
         first_line = True
         for line in f:
             if first_line:
-                matrix = [[float(num) for num in row.split(' ')] for row in line.split(';')]
+                useful_line = line[19:]
+                matrix = [[float(num) for num in row.split(' ')] for row in useful_line.split(';')]
+                print(matrix)
+                first_line = False
     return matrix
