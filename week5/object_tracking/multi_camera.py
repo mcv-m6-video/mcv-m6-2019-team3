@@ -298,106 +298,111 @@ def visualize_matches(matched_tracks, cameras_tracks_0, cameras_tracks_1, video_
         n_frame += 1
 
 
-def match_tracks(tracked_detections, cameras_tracks, homographies, timestamps, framenum, fps, video_path_0, video_path_1):
+def distances_to_tracks(track1, tracks_camera2, homographies, camera1, camera2):
+    match_tracks_metrics = np.ones(len(tracks_camera2))*(-1)
+    transformed_track1 = []
+    for detec in track1.detections:
+        transformed_detec = transform_detection(detec, homographies[camera1], homographies[camera2])
+        if check_inside_image(transformed_detec):
+            transformed_track1.append(transformed_detec)
+    for track2 in tracks_camera2:
+        comparison_bboxes = []
+        total_area_projected_bboxes = 0
+        for detec1 in transformed_track1:
+            total_area_projected_bboxes += bbox_area(detec1.bbox)
+            for detec2 in track2.detections:
+                comparison_bboxes.append((detec1.frame, detec2.frame, intersection_over_area(detec1.bbox, detec2.bbox),
+                                          bbox_intersection(detec1.bbox, detec2.bbox), bbox_area(detec1.bbox)))
+        sorted_bbox_comparisons = sorted(comparison_bboxes, key=lambda relation: relation[2], reverse=True)
+        best_match = None
+        tracks_intersection = 0
+        area_projected_bboxes = 0
+        num_matches = 0
+        for match in sorted_bbox_comparisons:
+            if match[2] > 0:
+                if best_match == None:
+                    best_match = match
+                    last_id1 = match[0]
+                    last_id2 = match[1]
+                    first_id1 = match[0]
+                    first_id2 = match[1]
+                    num_matches += 1
+                    tracks_intersection += match[3]
+                    area_projected_bboxes += match[4]
 
+                else:
+                    id1 = match[0]
+                    id2 = match[1]
+                    if id1 > last_id1 and id2 > last_id2:
+                        last_id1 = id1
+                        last_id2 = id2
+                        num_matches += 1
+                        tracks_intersection += match[3]
+                        area_projected_bboxes += match[4]
+                    elif id1 < first_id1 and id2 < first_id2:
+                        first_id1 = id1
+                        first_id2 = id2
+                        num_matches += 1
+                        tracks_intersection += match[3]
+                        area_projected_bboxes += match[4]
+        if total_area_projected_bboxes > 0:
+            match_tracks_metrics[track2.id] = tracks_intersection / total_area_projected_bboxes
+
+    return match_tracks_metrics
+
+
+def get_candidates_by_trajectory_in_camera2(match_tracks_metrics, intersection_threshold = 0.3):
+    candidates_by_trajectory = []
+    for track2id, dist in enumerate(match_tracks_metrics):
+        if dist > intersection_threshold or dist == -1:
+            print(dist)
+            candidates_by_trajectory.append(track2id)
+
+    return candidates_by_trajectory
+
+
+def interval_times_intersect(start_time, end_time, t1, t2):
+    if t1 > end_time or t2 < start_time:
+        return False
+    return True
+
+
+def filter_by_time_coherence(candidates_by_trajectory, track1, tracks_camera2, camera1, camera2, timestamps, fps, framenum, time_margin = 150):
+    sorted_detections_track1 = sorted(track1.detections, key=lambda x: x.frame, reverse=True)
+    start_time = sorted_detections_track1[0].frame - int(timestamps[camera1]*fps) - time_margin
+    end_time = sorted_detections_track1[-1].frame - int(timestamps[camera1]*fps) + time_margin
+
+    final_candidates = []
+    for track2 in tracks_camera2:
+        if track2.id in candidates_by_trajectory:
+            sorted_detections_track2 = sorted(track2.detections, key=lambda x: x.frame, reverse=True)
+            t1 = sorted_detections_track2[0].frame - int(timestamps[camera2]*fps)
+            t2 = sorted_detections_track2[0].frame - int(timestamps[camera2]*fps)
+            if interval_times_intersect(start_time, end_time, t1, t2):
+                final_candidates.append(track2.id)
+    return final_candidates
+
+
+def match_tracks(tracked_detections, cameras_tracks, homographies, timestamps, framenum, fps, video_path_0, video_path_1):
     for camera1 in cameras_tracks:
+        candidate_matches = {}
         print(camera1)
         tracks_camera1 = cameras_tracks[camera1]
-        for camera2 in cameras_tracks:
-            print(camera2)
-            if camera2 > camera1:
-                tracks_camera2 = cameras_tracks[camera2]
-                match_tracks_metrics = np.zeros((len(tracks_camera1)+1, len(tracks_camera2)+1))
-                for track1 in tracks_camera1:
-                    transformed_track1 = []
-                    for detec in track1.detections:
-                        transformed_detec = transform_detection(detec, homographies[camera1], homographies[camera2])
-                        if check_inside_image(transformed_detec):
-                            transformed_track1.append(transformed_detec)
-                    for track2 in tracks_camera2:
-                        comparison_bboxes = []
-                        total_area_projected_bboxes = 0
-                        for detec1 in transformed_track1:
-                            total_area_projected_bboxes += bbox_area(detec1.bbox)
-                            for detec2 in track2.detections:
-                                comparison_bboxes.append((detec1.frame, detec2.frame, intersection_over_area(detec1.bbox, detec2.bbox), bbox_intersection(detec1.bbox, detec2.bbox), bbox_area(detec1.bbox)))
-                        sorted_bbox_comparisons = sorted(comparison_bboxes, key=lambda relation: relation[2], reverse=True)
-                        best_match = None
-                        tracks_intersection = 0
-                        area_projected_bboxes = 0
-                        num_matches = 0
-                        for match in sorted_bbox_comparisons:
-                            if match[2] > 0:
-                                if best_match == None:
-                                    best_match = match
-                                    last_id1 = match[0]
-                                    last_id2 = match[1]
-                                    first_id1 = match[0]
-                                    first_id2 = match[1]
-                                    num_matches += 1
-                                    tracks_intersection += match[3]
-                                    area_projected_bboxes += match[4]
-
-                                else:
-                                    id1 = match[0]
-                                    id2 = match[1]
-                                    if id1 > last_id1 and id2 > last_id2:
-                                        last_id1 = id1
-                                        last_id2 = id2
-                                        num_matches += 1
-                                        tracks_intersection += match[3]
-                                        area_projected_bboxes += match[4]
-                                    elif id1 < first_id1 and id2 < first_id2:
-                                        first_id1 = id1
-                                        first_id2 = id2
-                                        num_matches += 1
-                                        tracks_intersection += match[3]
-                                        area_projected_bboxes += match[4]
-
-                        # print(sorted_bbox_comparisons)
-                        # best_match = sorted_bbox_comparisons[0]
-                        # tracks_intersection = 0
-                        # area_projected_bboxes = 0
-                        # id1 = best_match[0]
-                        # id2 = best_match[1]
-                        # num_matches = 0
-                        # possible_matches = [item for item in comparison_bboxes if item[0] == id1 and item[1] == id2]
-                        # while len(possible_matches) == 1:
-                        #     match = possible_matches[0]
-                        #     tracks_intersection += match[3]
-                        #     area_projected_bboxes += match[4]
-                        #     id1 += 1
-                        #     id2 += 1
-                        #     num_matches += 1
-                        #     possible_matches = [item for item in comparison_bboxes if item[0] == id1 and item[1] == id2]
-                        #print(tracks_intersection/area_projected_bboxes)
-                        #print(num_matches)
-                        if total_area_projected_bboxes > 0:
-                            match_tracks_metrics[track1.id][track2.id] = tracks_intersection/total_area_projected_bboxes
+        for track1 in tracks_camera1:
+            for camera2 in cameras_tracks:
+                if camera2 > camera1:
+                    tracks_camera2 = cameras_tracks[camera2]
+                    match_tracks_metrics = distances_to_tracks(track1, tracks_camera2, homographies, camera1, camera2)
+                    #print(match_tracks_metrics)
+                    candidates_by_trajectory = get_candidates_by_trajectory_in_camera2(match_tracks_metrics)
+                    print(candidates_by_trajectory)
+                    candidates_by_time_and_trajectory = filter_by_time_coherence(candidates_by_trajectory, track1, tracks_camera2, camera1, camera2, timestamps, fps, framenum)
+                    print(candidates_by_time_and_trajectory)
+                    candidate_matches[track1.id] = candidates_by_time_and_trajectory
 
 
-                candidate_matches_by_location = defaultdict(list)
-
-                # for track1, tracks_distance in enumerate(match_tracks_metrics):
-                #     if np.argmax(tracks_distance) == 56:
-                #         print(np.amax(tracks_distance))
-                #     if float(np.amax(tracks_distance)) > 0.1:
-                #         matched_tracks[track1] = np.argmax(tracks_distance)
-                #     elif np.argmax(tracks_distance) == 56:
-                #         print('NO')
-                # print(matched_tracks)
-
-                for track1, tracks_distance in enumerate(match_tracks_metrics):
-                    print(np.amax(tracks_distance))
-                    if float(np.amax(tracks_distance)) > 0.1:
-                     candidate_matches_by_location[track1].append(np.argmax(tracks_distance))
-                    #for track2, dist in enumerate(tracks_distance):
-                    #    if dist > 0.6:
-                    #        candidate_matches_by_location[track1].append(track2)
-                print(candidate_matches_by_location)
-
-                visualize_matches(candidate_matches_by_location, tracked_detections[camera1], tracked_detections[camera2], video_path_0, video_path_1)
-
+        print(candidate_matches)
+        #visualize_matches(candidate_matches, tracked_detections[0], tracked_detections[1], video_path_0, video_path_1)
 
 
 def match_tracks_by_frame(cameras_tracks, homographies, timestamps, framenum, fps, video_path_0, video_path_1, correspondences):
