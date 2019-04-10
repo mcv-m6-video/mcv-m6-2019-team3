@@ -2,9 +2,10 @@ import cv2
 import numpy as np
 from matplotlib import pyplot as plt
 import matplotlib.patches as mpatches
-import motmetrics as mm
+#import motmetrics as mm
 from tqdm import tqdm
 import pickle
+import json
 
 from evaluation.bbox_iou import bbox_iou
 from utils.detection import Detection
@@ -173,7 +174,7 @@ def get_IoU_relation(image, track, last_bbox, unused_detections, IoU_relation):
     return IoU_relation
 
 
-def track_objects(video_path, detections_list, gt_list, optical_flow = False, of_track= TrackingOF, display = False, export_frames = False, idf1 = True, save_pkl=True, name_pkl=''):
+def track_objects(video_path, detections_list, gt_list, optical_flow = False, of_track= TrackingOF, display = False, export_frames = False, idf1 = True, save_pkl=True, name_pkl='', save_json=False):
 
     colors = np.random.rand(500, 3)  # used only for display
     tracks = []
@@ -231,8 +232,9 @@ def track_objects(video_path, detections_list, gt_list, optical_flow = False, of
         mm_gt_bboxes = [[(bbox[0]+bbox[2])/2, (bbox[1]+bbox[3])/2, bbox[2]-bbox[0], bbox[3]-bbox[1]] for bbox in gt_bboxes]
         mm_detec_bboxes = [[(bbox[0]+bbox[2])/2, (bbox[1]+bbox[3])/2, bbox[2] - bbox[0], bbox[3] - bbox[1]] for bbox in detec_bboxes]
 
-        distances_gt_det = mm.distances.iou_matrix(mm_gt_bboxes, mm_detec_bboxes, max_iou=1.)
+
         if idf1:
+            distances_gt_det = mm.distances.iou_matrix(mm_gt_bboxes, mm_detec_bboxes, max_iou=1.)
             acc.update(gt_ids, detec_ids, distances_gt_det)
 
         pbar.update(1)
@@ -255,5 +257,11 @@ def track_objects(video_path, detections_list, gt_list, optical_flow = False, of
             pickle.dump(new_detections, f)
         with open('tracks' + name_pkl+'.pkl', 'wb') as f:
             pickle.dump(tracks, f)
+
+    if save_json:
+        with open('detections' + name_pkl+'.json', 'wb') as f:
+            json.dumps(new_detections, f)
+        with open('tracks' + name_pkl+'.json', 'wb') as f:
+            json.dumps(tracks, f)
 
     return new_detections, tracks

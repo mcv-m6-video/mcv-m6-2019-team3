@@ -7,7 +7,7 @@ from utils.detection import Detection
 from utils.track import Track
 
 
-def read_detections(path: str):
+def read_detections(path):
     # [frame, -1, left, top, width, height, conf, -1, -1, -1]
     frame_detections = []
 

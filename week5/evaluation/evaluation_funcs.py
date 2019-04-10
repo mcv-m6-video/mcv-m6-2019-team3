@@ -8,7 +8,6 @@ import matplotlib.pyplot as plt
 from tqdm import tqdm
 
 from evaluation.bbox_iou import bbox_iou
-from utils.plotting import plot_precision_recall_curve, plot_multiple_precision_recall_curves
 
 def compute_IoU(video_path, groundtruth_list, detections_list):
 

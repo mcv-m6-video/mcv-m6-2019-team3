@@ -3,6 +3,9 @@ import cv2
 import numpy as np
 from numpy.linalg import inv
 from collections import defaultdict, Counter
+from sklearn.cluster import DBSCAN
+import pickle
+
 
 from keras.models import Sequential
 from keras.layers import Dense
@@ -15,6 +18,7 @@ from utils.plotting import visualize_tracks, visualize_tracks_opencv
 from evaluation.bbox_iou import bbox_iou, bbox_intersection, intersection_over_area, bbox_area
 from utils.reading import read_homography_matrix, read_annotations_file
 from utils.detection import Detection
+from siamese.one_tower import One_tower
 
 
 def create_dataset(gt_detections, timestamps, framenum, fps):
@@ -85,7 +89,7 @@ def predict_bbox(train_data, train_labels):
     class PrintDot(Callback):
         def on_epoch_end(self, epoch, logs):
             if epoch % 100 == 0: print('')
-            print('.', end='')
+            #print('.', end='')
 
     EPOCHS = 100000
     history = model.fit(
@@ -149,25 +153,6 @@ def apply_homography_to_point(x, y, H1, H2):
 
 
 def get_homography_IoU(det_0, det_1, homography1, homography2):
-
-    # minc, minr, maxc, maxr = det_0.bbox
-    # H1 = np.array(homography1)
-    # H2 = np.array(homography2)
-    #
-    # x = minc
-    # y = maxr
-    # det_1_hom = apply_homography_to_point(x, y, H1, H2)
-    #
-    # x_br = maxc
-    # y_br = maxr
-    # det_1_hom_br = apply_homography_to_point(x_br, y_br, H1, H2)
-    #
-    #
-    # original_ratio = (maxr - minr)/(maxc - minc) #height/width of bbox
-    # width_transformed = abs(det_1_hom[0] - det_1_hom_br[0])
-    # height_transformed = original_ratio*width_transformed
-    #
-    # predicted_bbox_1 = [min(det_1_hom[0],det_1_hom_br[0]), min(det_1_hom[1],det_1_hom_br[1])-height_transformed, max(det_1_hom[0],det_1_hom_br[0]), max(det_1_hom[1],det_1_hom_br[1])]
 
     predicted_correspondence = transform_detection(det_0, homography1, homography2)
     predicted_bbox_1 = predicted_correspondence.bbox
@@ -355,7 +340,7 @@ def get_candidates_by_trajectory_in_camera2(match_tracks_metrics, intersection_t
     candidates_by_trajectory = []
     for track2id, dist in enumerate(match_tracks_metrics):
         if dist > intersection_threshold or dist == -1:
-            print(dist)
+            #print(dist)
             candidates_by_trajectory.append(track2id)
 
     return candidates_by_trajectory
@@ -383,25 +368,107 @@ def filter_by_time_coherence(candidates_by_trajectory, track1, tracks_camera2, c
     return final_candidates
 
 
-def match_tracks(tracked_detections, cameras_tracks, homographies, timestamps, framenum, fps, video_path_0, video_path_1):
+def compute_track_embedding(detections, camera, video_path, path_experiment, one_tower, embeddings, image_size = 64):
+    capture = cv2.VideoCapture(video_path)
+    n_frame = 0
+    sum_embeds = 0
+    num_detections = 0
+
+    while capture.isOpened():
+        valid, image = capture.read()
+        if not valid:
+            break
+        for detec in detections:
+            if detec.frame == n_frame:
+                print('Detection to embed: {}'.format(detec))
+                minc, minr, maxc, maxr = detec.bbox
+                image_car = image[minr:maxr, minc:maxc, :]
+                image_car_resized = cv2.resize(image_car,(image_size,image_size))
+                embed = one_tower.inference_detection(image_car_resized, path_experiment)
+                embeddings[camera].append({detec: embed})
+                print('embedding: {}'.format(embed))
+                sum_embeds += embed
+                num_detections += 1
+        n_frame += 1
+    return sum_embeds/num_detections, embeddings
+
+
+def get_candidates_embeddings(reference_track, reference_camera, candidates_matches, cameras_tracks, video_path, path_experiment, one_tower, embeddings):
+    candidate_tracks_embeddings = []
+    candidate_tracks_ids = []
+    emb_ref, embeddings = compute_track_embedding(reference_track.detections, reference_camera, video_path[reference_camera], path_experiment, one_tower, embeddings)
+    candidate_tracks_embeddings.append(emb_ref)
+    candidate_tracks_ids.append((reference_camera, reference_track.id))
+    for camera in candidates_matches:
+        candidates_camera = candidates_matches[camera]
+        print('Candidates camera: {}'.format(candidates_camera))
+        for track in cameras_tracks[camera]:
+            if track.id in candidates_camera:
+                emb, embeddings = compute_track_embedding(track.detections, camera, video_path[camera], path_experiment, one_tower, embeddings)
+                candidate_tracks_ids.append((camera, track.id))
+                candidate_tracks_embeddings.append(emb)
+    return candidate_tracks_embeddings, candidate_tracks_ids, embeddings
+
+
+def cluster_embeddings(tracks_embeddings):
+    X = np.array(tracks_embeddings)
+    clustering = DBSCAN(eps=3, min_samples=2).fit(X)
+    assignations = clustering.labels_
+    return assignations
+
+
+def assign_track(candidates_embeddings, candidate_tracks_ids, already_matched_tracks):
+    multitracks_id = defaultdict(list)
+    assignations = cluster_embeddings(candidates_embeddings)
+    assigned_label = assignations[0]
+    if assigned_label != -1:
+        for n, candidate in enumerate(candidate_tracks_ids):
+            if assignations[n] == assigned_label:
+                camera = candidate[0]
+                trackid = candidate[1]
+                already_matched_tracks[camera].append(trackid)
+                multitracks_id[camera].append(trackid)
+        return multitracks_id
+    return None
+
+
+
+
+def match_tracks(tracked_detections, cameras_tracks, homographies, timestamps, framenum, fps, video_path, path_experiment):
+    general_track_id = 1
+    multitrack_assignations = {}
+    one_tower = One_tower(64, 64)
+    embeddings = defaultdict(list)
+    already_matched_tracks = defaultdict(list)
     for camera1 in cameras_tracks:
         print(camera1)
         tracks_camera1 = cameras_tracks[camera1]
         for track1 in tracks_camera1:
-            candidate_matches = {}
-            for camera2 in cameras_tracks:
-                if camera2 > camera1:
-                    tracks_camera2 = cameras_tracks[camera2]
-                    match_tracks_metrics = distances_to_tracks(track1, tracks_camera2, homographies, camera1, camera2)
-                    #print(match_tracks_metrics)
-                    candidates_by_trajectory = get_candidates_by_trajectory_in_camera2(match_tracks_metrics)
-                    print(candidates_by_trajectory)
-                    candidates_by_time_and_trajectory = filter_by_time_coherence(candidates_by_trajectory, track1, tracks_camera2, camera1, camera2, timestamps, fps, framenum)
-                    print(candidates_by_time_and_trajectory)
-                    candidate_matches[camera2] = candidates_by_time_and_trajectory
+            if track1.id not in already_matched_tracks[camera1]:
+                candidate_matches = {}
+                for camera2 in cameras_tracks:
+                    if camera2 > camera1:
+                        tracks_camera2 = cameras_tracks[camera2]
+                        not_matched_tracks_camera2 = [t for t in tracks_camera2 if t not in already_matched_tracks[camera2]]
+                        match_tracks_metrics = distances_to_tracks(track1, not_matched_tracks_camera2, homographies, camera1, camera2)
+                        #print(match_tracks_metrics)
+                        candidates_by_trajectory = get_candidates_by_trajectory_in_camera2(match_tracks_metrics)
+                        #print(candidates_by_trajectory)
+                        candidates_by_time_and_trajectory = filter_by_time_coherence(candidates_by_trajectory, track1, tracks_camera2, camera1, camera2, timestamps, fps, framenum)
+                        print('Candidates in camera: {}'.format(candidates_by_time_and_trajectory))
+                        candidate_matches[camera2] = candidates_by_time_and_trajectory
+                print('Candidate_matches: {}'.format(candidate_matches))
+                candidates_embeddings, candidates_tracksids, embeddings = get_candidates_embeddings(track1, camera1, candidate_matches, cameras_tracks, video_path, path_experiment, one_tower, embeddings)
+                # with open('embeddings'+str(track1.id)+'.pkl', 'wb') as f:
+                #     pickle.dump(embeddings, f)
+                multitrack = assign_track(candidates_embeddings, candidates_tracksids, already_matched_tracks)
+                if multitrack != None:
+                    multitrack_assignations[general_track_id] = multitrack
+                    general_track_id += 1
 
-
-            print(candidate_matches)
+                print(candidate_matches)
+    with open('embeddings_total_c001_c002.pkl', 'wb') as f:
+        pickle.dump(embeddings, f)
         #visualize_matches(candidate_matches, tracked_detections[0], tracked_detections[1], video_path_0, video_path_1)
 
 
@@ -506,7 +573,7 @@ def lon_lat_to_cartesian(lon, lat, R = 6378137):
 
 
 if __name__ == '__main__':
-    frame_path_1 = '../video_frames/c001/frame_0357.png'
+    frame_path_1 = '../../week4/datasets/AICity_data/train/S03/c010/frames/frame_0218.jpg'
     groundtruth_challenge_path = "gt/gt.txt"
     video_challenge_path = "vdo.avi"
 
@@ -521,6 +588,7 @@ if __name__ == '__main__':
 
     detecs_car = [detec for detec in groundtruth_list if detec.track_id == 56]
     print(detecs_car)
+    bbox = [1111,767,384+1111,311+767]
 
 
     homography1 = read_homography_matrix(homography_path_start + camera1[(len(camera1)-5):] + homography_path)
@@ -529,12 +597,21 @@ if __name__ == '__main__':
     #image1 = cv2.imread(frame_path_1)
     #fig, ax = plt.subplots()
     #ax.imshow(image1)
-    image2 = cv2.imread(frame_path_2)
-    h, w = image2.shape[:2]
+    image1 = cv2.imread(frame_path_1)
+    h, w = image1.shape[:2]
     print('h: {}'.format(h))
     print("w: {}".format(w))
     fig, ax = plt.subplots()
-    ax.imshow(image2)
+    ax.imshow(image1)
+    plt.show()
+
+    minc, minr, maxc, maxr = bbox
+    image_crop = image1[minr:maxr, minc:maxc, :]
+    print(image_crop)
+    fig, ax = plt.subplots()
+    ax.imshow(image_crop)
+    plt.show()
+
     for detec in detecs_car:
         bbox_1 = detec.bbox
         print(bbox_1)

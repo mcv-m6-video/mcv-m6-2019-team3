@@ -1,5 +1,3 @@
-from utils.detection import Detection
-
 def bbox_iou(bboxA, bboxB):
     # compute the intersection over union of two bboxes
 
@@ -58,7 +56,7 @@ def intersection_over_area(bboxA, bboxB):
     return intersec/bboxAArea
 
 
-def detection_iou(det1 : Detection, det2 : Detection):
+def detection_iou(det1, det2):
     tly1, tly2 = det1.ytl, det2.ytl
     tlx1, tlx2 = det1.xtl, det2.xtl
     brx1, brx2 = det1.xtl+det1.width, det2.xtl+det2.width
