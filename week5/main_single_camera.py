@@ -7,8 +7,12 @@ from processing.background_subtraction import BackgroundSubtractor
 from utils.reading import read_annotations_from_txt
 from utils.filter import filtering_parked,filtering_nms
 from utils.plotting import draw_video_bboxes
+from optical_flow_tracking import TrackingOF
+from object_tracking.centroid import CentroidTracker
+import object_tracking.centroid as centroid
 
-repo_path = os.path.dirname(os.path.dirname(__file__))
+
+repo_path = "../"+os.path.dirname(os.path.dirname(__file__))
 dataset_path = os.path.join(repo_path, 'datasets', 'aic19-track1-mtmc-train')
 #train_path = os.path.join(dataset_path, 'train')
 #train_folders = ['S01', 'S04']      # Train with S01 and S04
@@ -77,6 +81,17 @@ for sequence in test_sequences:
         with open(os.path.join("results","metrics.txt"), "a") as f:
             f.write("\nComputing Kalman tracking\n")
         kalman_tracks = kalman_track_objects(video_path, detections, groundtruth_list, display=display_frames, export_frames=export_frames)
+        ######################## Centroid tracking
+        print("\nCentroid tracking")
+        with open("results/metrics.txt", "a") as f:
+            f.write("\nComputing Centroid tracking\n")
+        ct = CentroidTracker()
+        centroid.track_objects(ct, video_path, detections, groundtruth_list, display=display_frames, export_frames=False)
 
-    #################################################### Optical Flow
-    # TODO: Optical Flow
+        #################################################### Optical Flow
+        # Optical Flow
+        # print("\n Optical Flow Tracking")
+        # optical_flow = TrackingOF()
+        # optical_flow.track_optical_flow_sequence(video_path, False)
+        # print(optical_flow.ordered_tracks[0])
+        # print(optical_flow.frame_idx)
