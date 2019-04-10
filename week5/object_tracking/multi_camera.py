@@ -385,10 +385,10 @@ def filter_by_time_coherence(candidates_by_trajectory, track1, tracks_camera2, c
 
 def match_tracks(tracked_detections, cameras_tracks, homographies, timestamps, framenum, fps, video_path_0, video_path_1):
     for camera1 in cameras_tracks:
-        candidate_matches = {}
         print(camera1)
         tracks_camera1 = cameras_tracks[camera1]
         for track1 in tracks_camera1:
+            candidate_matches = {}
             for camera2 in cameras_tracks:
                 if camera2 > camera1:
                     tracks_camera2 = cameras_tracks[camera2]
@@ -398,10 +398,10 @@ def match_tracks(tracked_detections, cameras_tracks, homographies, timestamps, f
                     print(candidates_by_trajectory)
                     candidates_by_time_and_trajectory = filter_by_time_coherence(candidates_by_trajectory, track1, tracks_camera2, camera1, camera2, timestamps, fps, framenum)
                     print(candidates_by_time_and_trajectory)
-                    candidate_matches[track1.id] = candidates_by_time_and_trajectory
+                    candidate_matches[camera2] = candidates_by_time_and_trajectory
 
 
-        print(candidate_matches)
+            print(candidate_matches)
         #visualize_matches(candidate_matches, tracked_detections[0], tracked_detections[1], video_path_0, video_path_1)
 
 
