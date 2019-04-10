@@ -23,7 +23,7 @@ def filtering_parked(detections, video_path):
         detections_bboxes_next = [o.bbox for o in detections_on_next_frame]
 
         new_candidates = []
-        print(len(detections_bboxes))
+        # print(len(detections_bboxes))
         for candidate in detections_bboxes:
             minc, minr, maxc, maxr = candidate
             new_candidate = [minc, minr, maxc, maxr, 1]
@@ -35,7 +35,7 @@ def filtering_parked(detections, video_path):
             new_candidates.append(new_candidate)
 
         #no_parked = [x for x in new_candidates if x[4] != 0]
-        print(len(new_candidates))
+        # print(len(new_candidates))
 
         for n,candidate in enumerate(new_candidates):
             if candidate[4] != 0:
@@ -48,7 +48,7 @@ def filtering_parked(detections, video_path):
         # for candidate in det_bboxes:
         #     minc, minr, maxc, maxr = candidate
         #     cv2.rectangle(fr, (minc, minr), (maxc, maxr), (0, 0, 255), 8)  # Red
-        # # cv2.imshow('fr', fr)
+        # cv2.imshow('fr', fr)
         # cv2.waitKey(0)
         n_frame += 1
 

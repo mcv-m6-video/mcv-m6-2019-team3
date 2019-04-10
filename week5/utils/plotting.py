@@ -40,7 +40,7 @@ def plot_multiple_precision_recall_curves(groundtruth_list, detections_list, thr
 
 ########################## Bounding boxes
 
-def draw_video_bboxes(video_path, groundtruth, detections, export_frames=False):
+def draw_video_bboxes(video_path, groundtruth, detections, display=False, export_frames=False):
     """
     Send each frame Draw the groundtruth (green) and the detections (red) bboxes on a video
 
@@ -64,9 +64,14 @@ def draw_video_bboxes(video_path, groundtruth, detections, export_frames=False):
 
         # Plot image
         frame = draw_image_bboxes_opencv(image, gt_bboxes, detections_bboxes)
+        frame = cv2.resize(frame, (0, 0), fx=0.25, fy=0.25)
+
+        if display:
+            cv2.imshow(str(n_frame), frame)
+            cv2.waitKey(0)
+            cv2.destroyAllWindows()
 
         if export_frames:
-            frame = cv2.resize(frame, (0, 0), fx=0.25, fy=0.25)
             cv2.imwrite('output_frames/mask-rcnn/frame_{:04d}.png'.format(n_frame), frame, [int(cv2.IMWRITE_PNG_COMPRESSION), 4, int(cv2.IMWRITE_JPEG_QUALITY), 70])
 
         pbar.update(1)

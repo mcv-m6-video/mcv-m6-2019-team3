@@ -6,6 +6,7 @@ from object_tracking.tracking import track_objects
 from processing.background_subtraction import BackgroundSubtractor
 from utils.reading import read_annotations_from_txt
 from utils.filter import filtering_parked,filtering_nms
+from utils.plotting import draw_video_bboxes
 
 repo_path = os.path.dirname(os.path.dirname(__file__))
 dataset_path = os.path.join(repo_path, 'datasets', 'aic19-track1-mtmc-train')
@@ -15,7 +16,7 @@ test_path = os.path.join(dataset_path, 'train', 'S03')
 test_sequences = ['c010', 'c011', 'c012', 'c013', 'c014', 'c015']
 
 # para pruebas con una sola secuencia
-# test_sequences = ['c010']
+test_sequences = ['c015']
 
 # Flags
 display_frames = False
@@ -43,7 +44,6 @@ for sequence in test_sequences:
             detectionsMOG, detectionsMOG2, detectionsGMG = pickle.load(p)
     else:
         detectionsMOG, detectionsMOG2, detectionsGMG = BackgroundSubtractor(video_path)
-
     # detections_array.append(detectionsMOG)
     # detections_array.append(detectionsMOG2)
     # detections_array.append(detectionsGMG)
@@ -61,8 +61,7 @@ for sequence in test_sequences:
         # print(detection)
         # print('STOP 3')
         detections_array.append(detection)
-
-
+        #draw_video_bboxes(video_path, groundtruth_list, detection, display=True)
 
 
     #################################################### Tracking
