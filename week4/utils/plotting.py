@@ -147,9 +147,16 @@ def visualize_tracks_opencv(image, frame_tracks, colors, display=False, export_f
 
     """
     for id in frame_tracks.keys():
-        bbox = frame_tracks[id]
-        minc, minr, maxc, maxr = bbox['bbox']
-        cv2.rectangle(image, (minc, minr), (maxc, maxr), colors[id]*255, 20)
+        bboxes = frame_tracks[id]
+        for bbox in bboxes:
+            minc, minr, maxc, maxr = bbox
+            cv2.rectangle(image, (minc, minr), (maxc, maxr), colors[id]*255, 20)
+
+    # for id in frame_tracks.keys():
+    #     bbox = frame_tracks[id]
+    #     minc, minr, maxc, maxr = bbox['bbox']
+    #     cv2.rectangle(image, (minc, minr), (maxc, maxr), colors[id]*255, 20)
+
 
     if display:
         cv2.imshow(image)

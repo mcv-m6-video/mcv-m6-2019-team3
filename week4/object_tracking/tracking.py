@@ -177,7 +177,7 @@ def track_objects(video_path, detections_list, gt_list, optical_flow = False, of
 
     colors = np.random.rand(500, 3)  # used only for display
     tracks = []
-    max_track = 0
+    max_track = -1
     new_detections = []
     of_detections = []
 
@@ -249,7 +249,9 @@ def track_objects(video_path, detections_list, gt_list, optical_flow = False, of
         print(summary)
 
     if save_pkl:
-        with open(name_pkl+'.pkl', 'wb') as f:
+        with open('detections' + name_pkl+'.pkl', 'wb') as f:
             pickle.dump(new_detections, f)
+        with open('tracks' + name_pkl+'.pkl', 'wb') as f:
+            pickle.dump(tracks, f)
 
     return new_detections, tracks
