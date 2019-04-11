@@ -1,4 +1,5 @@
 import cv2
+import os
 import xml.etree.ElementTree as ET
 
 from tqdm import tqdm
@@ -149,3 +150,25 @@ def read_homography_matrix(hom_path):
                 print(matrix)
                 first_line = False
     return matrix
+
+
+def get_timestamp(dataset_path, sequence):
+    file_path = os.path.join(dataset_path, 'cam_timestamp', sequence + ".txt")
+    timestamps = []
+
+    with open(file_path, "r") as f:
+        for line in f:
+            timestamps.append(float(line.split()[1]))
+
+    return timestamps
+
+
+def get_framenum(dataset_path, sequence):
+    file_path = os.path.join(dataset_path, 'cam_framenum', sequence + ".txt")
+    framenum = []
+
+    with open(file_path, "r") as f:
+        for line in f:
+            framenum.append(int(line.split()[1]))
+
+    return framenum

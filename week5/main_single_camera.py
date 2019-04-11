@@ -12,8 +12,8 @@ from object_tracking.centroid import CentroidTracker
 import object_tracking.centroid as centroid
 
 
-repo_path = "../"+os.path.dirname(os.path.dirname(__file__))
-dataset_path = os.path.join(repo_path, 'datasets', 'aic19-track1-mtmc-train')
+root_path = "../" + os.path.dirname(os.path.dirname(__file__))
+dataset_path = os.path.join(root_path, 'datasets', 'aic19-track1-mtmc-train')
 #train_path = os.path.join(dataset_path, 'train')
 #train_folders = ['S01', 'S04']      # Train with S01 and S04
 test_path = os.path.join(dataset_path, 'train', 'S03')
@@ -56,6 +56,8 @@ for sequence in test_sequences:
     for network in ['det_mask_rcnn.txt', 'det_ssd512.txt', 'det_yolo3.txt']:
         network_path = os.path.join(test_path, sequence, 'det', network)
         detection = read_annotations_from_txt(network_path)
+        # detections_array.append(detection)
+
         # filtering nms
         detection = filtering_nms(detection, video_path)
         # print(detection)
