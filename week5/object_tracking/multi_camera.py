@@ -4,6 +4,7 @@ import numpy as np
 from numpy.linalg import inv
 from collections import defaultdict, Counter
 from sklearn.cluster import DBSCAN
+from scipy.spatial import distance
 import pickle
 
 
@@ -356,47 +357,62 @@ def filter_by_time_coherence(candidates_by_trajectory, track1, tracks_camera2, c
     sorted_detections_track1 = sorted(track1.detections, key=lambda x: x.frame, reverse=True)
     start_time = sorted_detections_track1[0].frame - int(timestamps[camera1]*fps) - time_margin
     end_time = sorted_detections_track1[-1].frame - int(timestamps[camera1]*fps) + time_margin
-
+    print('Time track1')
+    print(start_time)
+    print(end_time)
     final_candidates = []
     for track2 in tracks_camera2:
         if track2.id in candidates_by_trajectory:
+            print('Time candidate')
             sorted_detections_track2 = sorted(track2.detections, key=lambda x: x.frame, reverse=True)
+            print(len(sorted_detections_track2))
             t1 = sorted_detections_track2[0].frame - int(timestamps[camera2]*fps)
-            t2 = sorted_detections_track2[0].frame - int(timestamps[camera2]*fps)
+            t2 = sorted_detections_track2[-1].frame - int(timestamps[camera2]*fps)
+            print(t1)
+            print(t2)
             if interval_times_intersect(start_time, end_time, t1, t2):
                 final_candidates.append(track2.id)
     return final_candidates
 
 
 def compute_track_embedding(detections, camera, video_path, path_experiment, one_tower, embeddings, image_size = 64):
-    capture = cv2.VideoCapture(video_path)
+    #capture = cv2.VideoCapture(video_path)
     n_frame = 0
     sum_embeds = 0
     num_detections = 0
+    embed_cam = embeddings[camera]
+    #print(embed_cam)
+    for detec in detections:
+        print('Detection to embed: {}'.format(detec))
+        embed = embed_cam[detec]
+        print('embedding: {}'.format(embed))
+        sum_embeds += embed
+        num_detections += 1
 
-    while capture.isOpened():
-        valid, image = capture.read()
-        if not valid:
-            break
-        for detec in detections:
-            if detec.frame == n_frame:
-                print('Detection to embed: {}'.format(detec))
-                minc, minr, maxc, maxr = detec.bbox
-                image_car = image[minr:maxr, minc:maxc, :]
-                image_car_resized = cv2.resize(image_car,(image_size,image_size))
-                embed = one_tower.inference_detection(image_car_resized, path_experiment)
-                embeddings[camera].append({detec: embed})
-                print('embedding: {}'.format(embed))
-                sum_embeds += embed
-                num_detections += 1
-        n_frame += 1
-    return sum_embeds/num_detections, embeddings
+    # while capture.isOpened():
+    #     valid, image = capture.read()
+    #     if not valid:
+    #         break
+    #     for detec in detections:
+    #         if detec.frame == n_frame:
+    #             print('Detection to embed: {}'.format(detec))
+    #             #minc, minr, maxc, maxr = detec.bbox
+    #             #image_car = image[minr:maxr, minc:maxc, :]
+    #             #image_car_resized = cv2.resize(image_car,(image_size,image_size))
+    #             #embed = one_tower.inference_detection(image_car_resized, path_experiment)
+    #             embed = embeddings[camera][detec]
+    #             #embeddings[camera].append({detec: embed})
+    #             print('embedding: {}'.format(embed))
+    #             sum_embeds += embed
+    #             num_detections += 1
+    #     n_frame += 1
+    return sum_embeds/num_detections
 
 
 def get_candidates_embeddings(reference_track, reference_camera, candidates_matches, cameras_tracks, video_path, path_experiment, one_tower, embeddings):
     candidate_tracks_embeddings = []
     candidate_tracks_ids = []
-    emb_ref, embeddings = compute_track_embedding(reference_track.detections, reference_camera, video_path[reference_camera], path_experiment, one_tower, embeddings)
+    emb_ref = compute_track_embedding(reference_track.detections, reference_camera, video_path[reference_camera], path_experiment, one_tower, embeddings)
     candidate_tracks_embeddings.append(emb_ref)
     candidate_tracks_ids.append((reference_camera, reference_track.id))
     for camera in candidates_matches:
@@ -404,15 +420,22 @@ def get_candidates_embeddings(reference_track, reference_camera, candidates_matc
         print('Candidates camera: {}'.format(candidates_camera))
         for track in cameras_tracks[camera]:
             if track.id in candidates_camera:
-                emb, embeddings = compute_track_embedding(track.detections, camera, video_path[camera], path_experiment, one_tower, embeddings)
+                emb = compute_track_embedding(track.detections, camera, video_path[camera], path_experiment, one_tower, embeddings)
                 candidate_tracks_ids.append((camera, track.id))
                 candidate_tracks_embeddings.append(emb)
-    return candidate_tracks_embeddings, candidate_tracks_ids, embeddings
+    return candidate_tracks_embeddings, candidate_tracks_ids
+
+
+def compute_distances_to_candidates(candidate_tracks_embeddings):
+    ref_track = candidate_tracks_embeddings[0]
+    print('Distances:')
+    for track_emb in candidate_tracks_embeddings[1:]:
+        print(distance.euclidean(ref_track, track_emb))
 
 
 def cluster_embeddings(tracks_embeddings):
     X = np.array(tracks_embeddings)
-    clustering = DBSCAN(eps=3, min_samples=2).fit(X)
+    clustering = DBSCAN(eps=1, min_samples=2).fit(X)
     assignations = clustering.labels_
     return assignations
 
@@ -432,9 +455,7 @@ def assign_track(candidates_embeddings, candidate_tracks_ids, already_matched_tr
     return None
 
 
-
-
-def match_tracks(tracked_detections, cameras_tracks, homographies, timestamps, framenum, fps, video_path, path_experiment):
+def match_tracks(tracked_detections, cameras_tracks, homographies, timestamps, framenum, fps, video_path, path_experiment, embeddings_by_camera):
     general_track_id = 1
     multitrack_assignations = {}
     one_tower = One_tower(64, 64)
@@ -447,29 +468,30 @@ def match_tracks(tracked_detections, cameras_tracks, homographies, timestamps, f
             if track1.id not in already_matched_tracks[camera1]:
                 candidate_matches = {}
                 for camera2 in cameras_tracks:
-                    if camera2 > camera1:
+                    if camera2 != camera1:
                         tracks_camera2 = cameras_tracks[camera2]
                         not_matched_tracks_camera2 = [t for t in tracks_camera2 if t not in already_matched_tracks[camera2]]
                         match_tracks_metrics = distances_to_tracks(track1, not_matched_tracks_camera2, homographies, camera1, camera2)
-                        #print(match_tracks_metrics)
+                        print('Trajectory distances')
+                        print(match_tracks_metrics)
                         candidates_by_trajectory = get_candidates_by_trajectory_in_camera2(match_tracks_metrics)
                         #print(candidates_by_trajectory)
                         candidates_by_time_and_trajectory = filter_by_time_coherence(candidates_by_trajectory, track1, tracks_camera2, camera1, camera2, timestamps, fps, framenum)
                         print('Candidates in camera: {}'.format(candidates_by_time_and_trajectory))
                         candidate_matches[camera2] = candidates_by_time_and_trajectory
                 print('Candidate_matches: {}'.format(candidate_matches))
-                candidates_embeddings, candidates_tracksids, embeddings = get_candidates_embeddings(track1, camera1, candidate_matches, cameras_tracks, video_path, path_experiment, one_tower, embeddings)
-                # with open('embeddings'+str(track1.id)+'.pkl', 'wb') as f:
-                #     pickle.dump(embeddings, f)
+                candidates_embeddings, candidates_tracksids = get_candidates_embeddings(track1, camera1, candidate_matches, cameras_tracks, video_path, path_experiment, one_tower, embeddings_by_camera)
+                compute_distances_to_candidates(candidates_embeddings)
                 multitrack = assign_track(candidates_embeddings, candidates_tracksids, already_matched_tracks)
                 if multitrack != None:
                     multitrack_assignations[general_track_id] = multitrack
                     general_track_id += 1
 
                 print(candidate_matches)
-    with open('embeddings_total_c001_c002.pkl', 'wb') as f:
-        pickle.dump(embeddings, f)
+
         #visualize_matches(candidate_matches, tracked_detections[0], tracked_detections[1], video_path_0, video_path_1)
+
+    print(multitrack_assignations)
 
 
 def match_tracks_by_frame(cameras_tracks, homographies, timestamps, framenum, fps, video_path_0, video_path_1, correspondences):

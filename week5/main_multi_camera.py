@@ -9,8 +9,9 @@ from object_tracking.tracking import track_objects
 from object_tracking.multi_camera import match_tracks_by_frame, create_dataset, predict_bbox, bboxes_correspondences, match_tracks
 from utils.plotting import draw_video_bboxes
 from utils.reading import read_annotations_file, read_homography_matrix, get_framenum, get_timestamp
-from object_tracking.kalman_tracking import kalman_track_objects
-from utils.detection import Detection
+from utils.filter import filtering_parked,filtering_nms
+#from object_tracking.kalman_tracking import kalman_track_objects
+#from utils.detection import Detection
 
 
 if __name__ == '__main__':
@@ -20,14 +21,15 @@ if __name__ == '__main__':
 
     dataset_path = os.path.join(root_path, 'datasets', 'aic19-track1-mtmc-train')
     print(root_path)
-    sequences = [('train','S01'), ('test','S02'), ('train','S03'), ('train','S04'), ('test','S05')]
+    #sequences = [('train','S01'), ('test','S02'), ('train','S03'), ('train','S04'), ('test','S05')]
     # For testing
-    sequences = [('train', 'S03')]  # [('train','S01'), ('test','S02'), ('train','S03'), ('train','S04'), ('test','S05')]
+    sequences = [('train', 'S01')]  # [('train','S01'), ('test','S02'), ('train','S03'), ('train','S04'), ('test','S05')]
 
     #cameras_path = ["../datasets/aic19-track1-mtmc-train/train/S01/c001/", "../datasets/aic19-track1-mtmc-train/train/S01/c002/"]
     video_challenge_path = "/vdo.avi"
     detections_challenge_path = "/det/"
-    detectors = ["/det_ssd512.txt", "/det_mask_rcnn.txt", "/det_yolo3.txt"]
+    #detectors = ["/det_ssd512.txt", "/det_mask_rcnn.txt", "/det_yolo3.txt"]
+    detector = "det_ssd512.txt"
     groundtruth_challenge_path = "/gt/gt.txt"
     homography_path_start = os.path.join(root_path, 'datasets', 'calibration')
     homography_path = "/calibration.txt"
@@ -55,37 +57,51 @@ if __name__ == '__main__':
 
         tracked_detections = {}
         tracks_by_camera = {}
+        embeddings = {}
         homography_cameras = {}
         groundtruth_list = {}
+        video_path = {}
 
         for cam_num, camera in enumerate(cameras_path):
 
             if camera[-4:] == 'c015':
                 fps = 8
 
-            #detections_list, _ = read_annotations_file(camera + detections_challenge_path + detector, camera + video_challenge_path)
+            video_path[cam_num] = camera + video_challenge_path
+            detections_list, _ = read_annotations_file(camera + detections_challenge_path + detector, camera + video_challenge_path)
+
             groundtruth_list[cam_num], _ = read_annotations_file(camera + groundtruth_challenge_path, camera + video_challenge_path)
             homography_cameras[cam_num] = read_homography_matrix(homography_path_start + camera[-5:] + homography_path)
 
             print("\nComputing tracking by overlap")
-            if load_pkl and os.path.exists('detections'+str(cam_num)+'.pkl') and os.path.exists('tracks'+str(cam_num)+'.pkl'):
-                with open('detections' + str(cam_num)+'.pkl', 'rb') as p:
+            if load_pkl and os.path.exists('detections' + str(sequence) + str(cam_num)+'.pkl') and os.path.exists('tracks' + str(sequence) + str(cam_num)+'.pkl'):
+                with open('detections' + str(sequence) + str(cam_num)+'.pkl', 'rb') as p:
                     print("Reading tracked detections from pkl")
                     tracked_detections[cam_num] = pickle.load(p)
+                    print(tracked_detections[cam_num])
                     print("Tracked detections loaded\n")
 
-                with open('tracks' + str(cam_num)+'.pkl', 'rb') as p:
+                with open('tracks' + str(sequence) + str(cam_num)+'.pkl', 'rb') as p:
                     print("Reading tracks from pkl")
                     tracks_by_camera[cam_num] = pickle.load(p)
                     print("Tracks loaded\n")
 
+                with open('embeddings' + str(sequence) + str(cam_num)+'.pkl', 'rb') as p:
+                    print("Reading tracks from pkl")
+                    embeddings[cam_num] = pickle.load(p)
+                    print("Tracks loaded\n")
+
             else:
-                tracked_detections[cam_num], tracks_by_camera[cam_num] = track_objects(camera + video_challenge_path, groundtruth_list[cam_num], groundtruth_list[cam_num],
-                                                display=display_frames, export_frames=export_frames, idf1=False, name_pkl=str(cam_num))
+
+                detections_list = filtering_nms(detections_list, video_path[cam_num])
+                detections_list = filtering_parked(detections_list, video_path[cam_num])
+
+                tracked_detections[cam_num], tracks_by_camera[cam_num], embeddings[cam_num] = track_objects(camera + video_challenge_path, detections_list, groundtruth_list[cam_num],
+                                                display=display_frames, export_frames=export_frames, idf1=False, name_pkl=str(sequence) + str(cam_num))
 
             # Compute mAP
             compute_mAP(groundtruth_list[cam_num], tracked_detections[cam_num])
 
         #correspondences = bboxes_correspondences(groundtruth_list, timestamps, framenum, fps)
-        match_tracks(tracked_detections, tracks_by_camera, homography_cameras, timestamps, framenum, fps, video_path, path_experiment)        #match_tracks_by_frame(tracked_detections, homography_cameras, timestamps, framenum, fps, cameras_path[0] + video_challenge_path, cameras_path[1] + video_challenge_path, correspondences)
+        match_tracks(tracked_detections, tracks_by_camera, homography_cameras, timestamps, framenum, fps, video_path, path_experiment, embeddings)        #match_tracks_by_frame(tracked_detections, homography_cameras, timestamps, framenum, fps, cameras_path[0] + video_challenge_path, cameras_path[1] + video_challenge_path, correspondences)
 

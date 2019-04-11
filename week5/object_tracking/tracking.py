@@ -12,6 +12,20 @@ from utils.detection import Detection
 from utils.plotting import visualize_tracks, visualize_tracks_opencv
 from utils.track import Track
 from optical_flow_tracking import TrackingOF
+from siamese.one_tower import One_tower
+
+
+def compute_embedding(detec, image, one_tower, image_size=64, path_experiment = '../../siamese/experiments/Wed_Apr_10_08_49_36_2019'):
+    minc, minr, maxc, maxr = detec.bbox
+    image_car = image[minr:maxr, minc:maxc, :]
+    image_car_resized = cv2.resize(image_car, (image_size, image_size))
+    embed = one_tower.inference_detection(image_car_resized, path_experiment)
+    print(embed)
+    return embed
+
+def compute_embeddings(detections_to_embed, one_tower, image_size=64, path_experiment = '../../siamese/experiments/Wed_Apr_10_08_49_36_2019'):
+    embeds =  one_tower.inference_detections(detections_to_embed, path_experiment)
+    return embeds
 
 
 def intersection(u, v):
@@ -175,7 +189,9 @@ def get_IoU_relation(image, track, last_bbox, unused_detections, IoU_relation):
 
 
 def track_objects(video_path, detections_list, gt_list, optical_flow = False, of_track= TrackingOF, display = False, export_frames = False, idf1 = True, save_pkl=True, name_pkl='', save_json=False):
-
+    one_tower = One_tower(64, 64)
+    embeddings = {}
+    detects_to_embed = {}
     colors = np.random.rand(500, 3)  # used only for display
     tracks = []
     max_track = -1
@@ -219,6 +235,10 @@ def track_objects(video_path, detections_list, gt_list, optical_flow = False, of
             cd = Detection(n_frame, 'car', bbox[0], bbox[1], bbox[2] - bbox[0],
                                             bbox[3] - bbox[1], conf, track_id=key,
                                             histogram=rgb_histogram(image[int(bbox[1]):int(bbox[3]), int(bbox[0]):int(bbox[2]), :]))
+            minc, minr, maxc, maxr = cd.bbox
+            image_car = image[minr:maxr, minc:maxc, :]
+            image_car_resized = cv2.resize(image_car, (64, 64))
+            detects_to_embed[cd] = image_car_resized
             new_detections.append(cd)
         if optical_flow:
             of_detections.append(of_track.check_optical_flow(new_detections, n_frame))
@@ -243,7 +263,7 @@ def track_objects(video_path, detections_list, gt_list, optical_flow = False, of
     pbar.close()
     capture.release()
     cv2.destroyAllWindows()
-
+    embeddings = compute_embeddings(detects_to_embed, one_tower)
     if idf1:
         print(acc.mot_events)
         mh = mm.metrics.create()
@@ -257,6 +277,8 @@ def track_objects(video_path, detections_list, gt_list, optical_flow = False, of
             pickle.dump(new_detections, f)
         with open('tracks' + name_pkl+'.pkl', 'wb') as f:
             pickle.dump(tracks, f)
+        with open('embeddings' + name_pkl + '.pkl', 'wb') as f:
+            pickle.dump(embeddings, f)
 
     if save_json:
         with open('detections' + name_pkl+'.json', 'wb') as f:
@@ -264,4 +286,5 @@ def track_objects(video_path, detections_list, gt_list, optical_flow = False, of
         with open('tracks' + name_pkl+'.json', 'wb') as f:
             json.dumps(tracks, f)
 
-    return new_detections, tracks
+
+    return new_detections, tracks, embeddings

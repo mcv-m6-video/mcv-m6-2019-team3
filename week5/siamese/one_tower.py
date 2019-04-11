@@ -329,6 +329,18 @@ class One_tower():
             emb =  self.out.eval({self.x: [ima], self.keep_prob_fc: 1.0})
         return emb
 
+    def inference_detections(self, detections_to_embed, path_experiment):
+        saver = tf.train.Saver()
+        with tf.Session() as sess:
+            tf.global_variables_initializer().run()
+            self.load_weights(path_experiment, saver, sess)
+            embeds = {}
+            for det in detections_to_embed:
+                image = detections_to_embed[det]
+                emb =  self.out.eval({self.x: [image], self.keep_prob_fc: 1.0})
+                embeds[det] = emb
+        return embeds
+
     def inference_dataset(self, ds, path_experiment): 
         labels = []
         points = []
