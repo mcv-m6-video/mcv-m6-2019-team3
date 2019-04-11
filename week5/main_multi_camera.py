@@ -19,7 +19,6 @@ if __name__ == '__main__':
     root_path = os.path.abspath(os.path.join(os.getcwd(), ".."))
 
     dataset_path = os.path.join(root_path, 'datasets', 'aic19-track1-mtmc-train')
-    print(root_path)
     sequences = [('train','S01'), ('test','S02'), ('train','S03'), ('train','S04'), ('test','S05')]
     # For testing
     sequences = [('train', 'S03')]  # [('train','S01'), ('test','S02'), ('train','S03'), ('train','S04'), ('test','S05')]
