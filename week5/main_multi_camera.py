@@ -107,7 +107,8 @@ if __name__ == '__main__':
         #correspondences = bboxes_correspondences(groundtruth_list, timestamps, framenum, fps)
         #multicamera_tracks = match_tracks(tracked_detections, tracks_by_camera, homography_cameras, timestamps, framenum, fps, video_path, path_experiment, embeddings)        #match_tracks_by_frame(tracked_detections, homography_cameras, timestamps, framenum, fps, cameras_path[0] + video_challenge_path, cameras_path[1] + video_challenge_path, correspondences)
 
-        with open('multitracksresultsS01_3.pkl', 'rb') as p:
+
+        with open('multitracksresultsS04_2.pkl', 'rb') as p:
             print("Reading tracks from pkl")
             multicamera_tracks = pickle.load(p)
             print("Tracks loaded\n")

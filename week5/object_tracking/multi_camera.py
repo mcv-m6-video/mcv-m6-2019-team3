@@ -420,7 +420,7 @@ def compute_distances_to_candidates(candidate_tracks_embeddings):
 
 def cluster_embeddings(tracks_embeddings):
     X = np.array(tracks_embeddings)
-    clustering = DBSCAN(eps=0.5, min_samples=2).fit(X)
+    clustering = DBSCAN(eps=0.3, min_samples=2).fit(X)
     assignations = clustering.labels_
     return assignations
 
@@ -476,7 +476,7 @@ def match_tracks(tracked_detections, cameras_tracks, homographies, timestamps, f
                 print(candidate_matches)
 
         #visualize_matches(candidate_matches, tracked_detections[0], tracked_detections[1], video_path_0, video_path_1)
-    with open('multitracksresultsS01_2.pkl', 'wb') as f:
+    with open('multitracksresultsS04_2.pkl', 'wb') as f:
         pickle.dump(multitrack_assignations, f, protocol=2)
     print(multitrack_assignations)
 
@@ -580,13 +580,12 @@ def lon_lat_to_cartesian(lon, lat, R = 6378137):
 #     print('camera2: {0}, {1}, {2}'.format(x2, y2, z2))
 #
 
-
 if __name__ == '__main__':
-    frame_path_1 = '../../week4/datasets/AICity_data/train/S03/c010/frames/frame_0218.jpg'
+    frame_path_1 = '../video_frames/c001/frame_0357.png'
     groundtruth_challenge_path = "gt/gt.txt"
     video_challenge_path = "vdo.avi"
 
-    frame_path_2 = '../video_frames/c002/frame_0338.png'
+    frame_path_2 = '../../week4/video_frames/c002/frame_0338.png'
     homography_path = "calibration.txt"
     camera1 = "../../datasets/AICity_data/train/S01/c001/"
     camera2 = "../../datasets/AICity_data/train/S01/c002/"
@@ -595,9 +594,8 @@ if __name__ == '__main__':
     groundtruth_list, _ = read_annotations_file(camera1 + groundtruth_challenge_path,
                                                          camera1 + video_challenge_path)
 
-    detecs_car = [detec for detec in groundtruth_list if detec.track_id == 56]
+    detecs_car = [detec for detec in groundtruth_list if detec.track_id == 54]
     print(detecs_car)
-    bbox = [1111,767,384+1111,311+767]
 
 
     homography1 = read_homography_matrix(homography_path_start + camera1[(len(camera1)-5):] + homography_path)
@@ -606,21 +604,12 @@ if __name__ == '__main__':
     #image1 = cv2.imread(frame_path_1)
     #fig, ax = plt.subplots()
     #ax.imshow(image1)
-    image1 = cv2.imread(frame_path_1)
-    h, w = image1.shape[:2]
+    image2 = cv2.imread(frame_path_2)
+    h, w = image2.shape[:2]
     print('h: {}'.format(h))
     print("w: {}".format(w))
     fig, ax = plt.subplots()
-    ax.imshow(image1)
-    plt.show()
-
-    minc, minr, maxc, maxr = bbox
-    image_crop = image1[minr:maxr, minc:maxc, :]
-    print(image_crop)
-    fig, ax = plt.subplots()
-    ax.imshow(image_crop)
-    plt.show()
-
+    ax.imshow(image2)
     for detec in detecs_car:
         bbox_1 = detec.bbox
         print(bbox_1)
@@ -682,6 +671,3 @@ if __name__ == '__main__':
                                   linewidth=4)
         ax.add_patch(rect)
     plt.show()
-
-
-
