@@ -334,11 +334,11 @@ class One_tower():
         with tf.Session() as sess:
             tf.global_variables_initializer().run()
             self.load_weights(path_experiment, saver, sess)
-            embeds = {}
+            embeds = []
             for det in detections_to_embed:
                 image = detections_to_embed[det]
                 emb =  self.out.eval({self.x: [image], self.keep_prob_fc: 1.0})
-                embeds[det] = emb
+                embeds.append(dict(detection=det, embedding=emb))
         return embeds
 
     def inference_dataset(self, ds, path_experiment): 

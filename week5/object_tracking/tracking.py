@@ -23,9 +23,39 @@ def compute_embedding(detec, image, one_tower, image_size=64, path_experiment = 
     print(embed)
     return embed
 
+
 def compute_embeddings(detections_to_embed, one_tower, image_size=64, path_experiment = '../../siamese/experiments/Wed_Apr_10_08_49_36_2019'):
     embeds =  one_tower.inference_detections(detections_to_embed, path_experiment)
     return embeds
+
+
+def compute_embeddings_for_tracked_detections(tracked_detections, video_path, name_pkl):
+    one_tower = One_tower(64,64)
+    capture = cv2.VideoCapture(video_path)
+    n_frame = 0
+    detects_to_embed = {}
+
+    while capture.isOpened():
+        valid, image = capture.read()
+        if not valid:
+            break
+
+        detections_on_frame = [x for x in tracked_detections if x.frame == n_frame]
+        for detec in detections_on_frame:
+            minc, minr, maxc, maxr = detec.bbox
+            image_car = image[minr:maxr, minc:maxc, :]
+            image_car_resized = cv2.resize(image_car, (64, 64))
+            detects_to_embed[detec] = image_car_resized
+
+        n_frame += 1
+
+    embeddings = compute_embeddings(detects_to_embed, one_tower)
+    with open('embeddings' + name_pkl + '.pkl', 'wb') as f:
+        pickle.dump(embeddings, f, protocol=2)
+
+
+    return embeddings
+
 
 
 def intersection(u, v):
@@ -263,7 +293,7 @@ def track_objects(video_path, detections_list, gt_list, optical_flow = False, of
     pbar.close()
     capture.release()
     cv2.destroyAllWindows()
-    embeddings = compute_embeddings(detects_to_embed, one_tower)
+    #embeddings = compute_embeddings(detects_to_embed, one_tower)
     if idf1:
         print(acc.mot_events)
         mh = mm.metrics.create()
@@ -274,11 +304,11 @@ def track_objects(video_path, detections_list, gt_list, optical_flow = False, of
 
     if save_pkl:
         with open('detections' + name_pkl+'.pkl', 'wb') as f:
-            pickle.dump(new_detections, f)
+            pickle.dump(new_detections, f, protocol=2)
         with open('tracks' + name_pkl+'.pkl', 'wb') as f:
-            pickle.dump(tracks, f)
+            pickle.dump(tracks, f, protocol=2)
         with open('embeddings' + name_pkl + '.pkl', 'wb') as f:
-            pickle.dump(embeddings, f)
+            pickle.dump(embeddings, f, protocol=2)
 
     if save_json:
         with open('detections' + name_pkl+'.json', 'wb') as f:

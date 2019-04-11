@@ -5,13 +5,14 @@ import pickle
 
 # Tracking
 from evaluation.evaluation_funcs import compute_mAP
-from object_tracking.tracking import track_objects
+from object_tracking.tracking import track_objects, compute_embeddings_for_tracked_detections
 from object_tracking.multi_camera import match_tracks_by_frame, create_dataset, predict_bbox, bboxes_correspondences, match_tracks
 from utils.plotting import draw_video_bboxes
 from utils.reading import read_annotations_file, read_homography_matrix, get_framenum, get_timestamp
 from utils.filter import filtering_parked,filtering_nms
 #from object_tracking.kalman_tracking import kalman_track_objects
 #from utils.detection import Detection
+import motmetrics as mm
 
 
 if __name__ == '__main__':
@@ -78,7 +79,7 @@ if __name__ == '__main__':
                 with open('detections' + str(sequence) + str(cam_num)+'.pkl', 'rb') as p:
                     print("Reading tracked detections from pkl")
                     tracked_detections[cam_num] = pickle.load(p)
-                    print(tracked_detections[cam_num])
+                    #print(tracked_detections[cam_num])
                     print("Tracked detections loaded\n")
 
                 with open('tracks' + str(sequence) + str(cam_num)+'.pkl', 'rb') as p:
@@ -99,9 +100,25 @@ if __name__ == '__main__':
                 tracked_detections[cam_num], tracks_by_camera[cam_num], embeddings[cam_num] = track_objects(camera + video_challenge_path, detections_list, groundtruth_list[cam_num],
                                                 display=display_frames, export_frames=export_frames, idf1=False, name_pkl=str(sequence) + str(cam_num))
 
+                embeddings[cam_num] = compute_embeddings_for_tracked_detections(tracked_detections[cam_num], video_path[cam_num], name_pkl=str(sequence) + str(cam_num))
             # Compute mAP
             compute_mAP(groundtruth_list[cam_num], tracked_detections[cam_num])
 
         #correspondences = bboxes_correspondences(groundtruth_list, timestamps, framenum, fps)
-        match_tracks(tracked_detections, tracks_by_camera, homography_cameras, timestamps, framenum, fps, video_path, path_experiment, embeddings)        #match_tracks_by_frame(tracked_detections, homography_cameras, timestamps, framenum, fps, cameras_path[0] + video_challenge_path, cameras_path[1] + video_challenge_path, correspondences)
+        #multicamera_tracks = match_tracks(tracked_detections, tracks_by_camera, homography_cameras, timestamps, framenum, fps, video_path, path_experiment, embeddings)        #match_tracks_by_frame(tracked_detections, homography_cameras, timestamps, framenum, fps, cameras_path[0] + video_challenge_path, cameras_path[1] + video_challenge_path, correspondences)
 
+        # print('Compute IDF1 for multicamera tracking')
+        # acc = mm.MOTAccumulator(auto_id=True)
+        # for cam_num, camera in enumerate(cameras_path):
+        #
+        #
+        #     mm_gt_bboxes = [[(bbox[0] + bbox[2]) / 2, (bbox[1] + bbox[3]) / 2, bbox[2] - bbox[0], bbox[3] - bbox[1]] for
+        #                     bbox in gt_bboxes]
+        #     mm_detec_bboxes = [[(bbox[0] + bbox[2]) / 2, (bbox[1] + bbox[3]) / 2, bbox[2] - bbox[0], bbox[3] - bbox[1]]
+        #                        for bbox in detec_bboxes]
+        #     distances_gt_det = mm.distances.iou_matrix(mm_gt_bboxes, mm_detec_bboxes, max_iou=1.)
+        #     acc.update(gt_ids, detec_ids, distances_gt_det)
+        #
+        # print(acc.mot_events)
+        # mh = mm.metrics.create()
+        # summary = mh.compute(acc, metrics=mm.metrics.motchallenge_metrics, name='acc')
