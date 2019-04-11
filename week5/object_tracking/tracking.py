@@ -219,7 +219,6 @@ def get_IoU_relation(image, track, last_bbox, unused_detections, IoU_relation):
 
 
 def track_objects(video_path, detections_list, gt_list, optical_flow = False, of_track= TrackingOF, display = False, export_frames = False, idf1 = True, save_pkl=True, name_pkl='', save_json=False):
-    one_tower = One_tower(64, 64)
     embeddings = {}
     detects_to_embed = {}
     colors = np.random.rand(500, 3)  # used only for display

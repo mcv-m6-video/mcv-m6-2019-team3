@@ -414,7 +414,8 @@ def compute_distances_to_candidates(candidate_tracks_embeddings):
         dist += distance.euclidean(ref_track, track_emb)
         print(distance.euclidean(ref_track, track_emb))
         num += 1
-    print('Mean distance: {}'.format(dist/num))
+    if num > 0:
+        print('Mean distance: {}'.format(dist/num))
 
 
 def cluster_embeddings(tracks_embeddings):
@@ -433,8 +434,9 @@ def assign_track(candidates_embeddings, candidate_tracks_ids, already_matched_tr
             if assignations[n] == assigned_label:
                 camera = candidate[0]
                 trackid = candidate[1]
-                already_matched_tracks[camera].append(trackid)
-                multitracks_id[camera].append(trackid)
+                if trackid not in already_matched_tracks[camera]:
+                    already_matched_tracks[camera].append(trackid)
+                    multitracks_id[camera].append(trackid)
         return already_matched_tracks, multitracks_id
     return already_matched_tracks, None
 
@@ -454,7 +456,7 @@ def match_tracks(tracked_detections, cameras_tracks, homographies, timestamps, f
                 for camera2 in cameras_tracks:
                     if camera2 != camera1:
                         tracks_camera2 = cameras_tracks[camera2]
-                        not_matched_tracks_camera2 = [t for t in tracks_camera2 if t not in already_matched_tracks[camera2]]
+                        not_matched_tracks_camera2 = [t for t in tracks_camera2 if (t not in already_matched_tracks[camera2])]
                         match_tracks_metrics = distances_to_tracks(track1, not_matched_tracks_camera2, homographies, camera1, camera2)
                         print('Trajectory distances')
                         print(match_tracks_metrics)
@@ -474,7 +476,7 @@ def match_tracks(tracked_detections, cameras_tracks, homographies, timestamps, f
                 print(candidate_matches)
 
         #visualize_matches(candidate_matches, tracked_detections[0], tracked_detections[1], video_path_0, video_path_1)
-    with open('multitracksresults.pkl', 'wb') as f:
+    with open('multitracksresultsS01_2.pkl', 'wb') as f:
         pickle.dump(multitrack_assignations, f, protocol=2)
     print(multitrack_assignations)
 
