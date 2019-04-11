@@ -318,3 +318,89 @@ def track_objects(video_path, detections_list, gt_list, optical_flow = False, of
 
 
     return new_detections, tracks, embeddings
+
+
+def track_objects_single(video_path, detections_list, gt_list, optical_flow = False, of_track= TrackingOF, display = False, export_frames = False, idf1 = True, save_pkl=True, name_pkl=''):
+
+    colors = np.random.rand(500, 3)  # used only for display
+    tracks = []
+    max_track = -1
+    new_detections = []
+    of_detections = []
+
+    if idf1:
+        acc = mm.MOTAccumulator(auto_id=True)
+
+    capture = cv2.VideoCapture(video_path)
+    n_frame = 0
+    pbar = tqdm(total=2140)
+
+    while capture.isOpened():
+        valid, image = capture.read()
+        if not valid:
+            break
+        frame_tracks = {}
+
+        detections_on_frame = [x for x in detections_list if x.frame == n_frame]
+        gt_on_frame = [x for x in gt_list if x.frame == n_frame]
+
+        tracks, unused_detections, frame_tracks = update_tracks(image, tracks, detections_on_frame, frame_tracks)
+        tracks, max_track, frame_tracks = obtain_new_tracks(tracks, unused_detections, max_track, frame_tracks)
+
+        if display and n_frame%2==0 and n_frame < 200:
+            visualize_tracks(image, frame_tracks, colors, display=display)
+
+        if export_frames:
+            visualize_tracks_opencv(image, frame_tracks, colors, export_frames=export_frames,
+                             export_path="output_frames/tracking/frame_{:04d}.png".format(n_frame))
+
+        # IDF1 computing
+        detec_bboxes = []
+        detec_ids = []
+        for key, value in frame_tracks.items():
+            detec_ids.append(key)
+            bbox = value['bbox']
+            conf = value['confidence']
+            detec_bboxes.append(bbox)
+            cd = Detection(n_frame, 'car', bbox[0], bbox[1], bbox[2] - bbox[0],
+                                            bbox[3] - bbox[1], conf, track_id=key,
+                                            histogram=rgb_histogram(image[int(bbox[1]):int(bbox[3]), int(bbox[0]):int(bbox[2]), :]))
+            new_detections.append(cd)
+        if optical_flow:
+            of_detections.append(of_track.check_optical_flow(new_detections, n_frame))
+
+        gt_bboxes = []
+        gt_ids = []
+        for gt in gt_on_frame:
+            gt_bboxes.append(gt.bbox)
+            gt_ids.append(gt.track_id)
+
+        mm_gt_bboxes = [[(bbox[0]+bbox[2])/2, (bbox[1]+bbox[3])/2, bbox[2]-bbox[0], bbox[3]-bbox[1]] for bbox in gt_bboxes]
+        mm_detec_bboxes = [[(bbox[0]+bbox[2])/2, (bbox[1]+bbox[3])/2, bbox[2] - bbox[0], bbox[3] - bbox[1]] for bbox in detec_bboxes]
+
+        distances_gt_det = mm.distances.iou_matrix(mm_gt_bboxes, mm_detec_bboxes, max_iou=1.)
+        if idf1:
+            acc.update(gt_ids, detec_ids, distances_gt_det)
+
+        pbar.update(1)
+        n_frame += 1
+
+    pbar.close()
+    capture.release()
+    cv2.destroyAllWindows()
+
+    if idf1:
+        print(acc.mot_events)
+        mh = mm.metrics.create()
+        summary = mh.compute(acc, metrics=mm.metrics.motchallenge_metrics, name='acc')
+        with open("results/metrics.txt", "a") as f:
+            f.write(summary.to_string() + "\n")
+        print(summary)
+
+    if save_pkl:
+        with open('detections' + name_pkl+'.pkl', 'wb') as f:
+            pickle.dump(new_detections, f)
+        with open('tracks' + name_pkl+'.pkl', 'wb') as f:
+            pickle.dump(tracks, f)
+
+    return new_detections, tracks
