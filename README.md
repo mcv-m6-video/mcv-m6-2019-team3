@@ -28,6 +28,14 @@
   <img src="https://github.com/mcv-m6-video/mcv-m6-2019-team3/blob/master/week4/images/cat_stabilized.gif">
 </div>
 
+## Week 5: Multi-camera tracking
+
+<div align="center">
+  <img src="https://github.com/mcv-m6-video/mcv-m6-2019-team3/blob/master/week5/images/output2.gif">
+  <img src="https://github.com/mcv-m6-video/mcv-m6-2019-team3/blob/master/week5/images/output3.gif">
+  <img src="https://github.com/mcv-m6-video/mcv-m6-2019-team3/blob/master/week5/images/output4.gif">
+</div>
+
 ## Team 3
 
 - Gemma Canet Tarrés
@@ -50,6 +58,7 @@ pip install -r requirements.txt
 ├── week1/
 ├── week2/
 ├── week3/
-└── week4/
+├── week4/
+└── week5/
 
 ```
