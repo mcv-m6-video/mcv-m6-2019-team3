@@ -2,7 +2,7 @@ import os
 import pickle
 import cv2
 from object_tracking.kalman_tracking import kalman_track_objects
-from object_tracking.tracking import track_objects
+from object_tracking.tracking import track_objects_single
 from processing.background_subtraction import BackgroundSubtractor
 from utils.reading import read_annotations_from_txt
 from utils.filter import filtering_parked,filtering_nms
@@ -11,20 +11,25 @@ from optical_flow_tracking import TrackingOF
 from object_tracking.centroid import CentroidTracker
 import object_tracking.centroid as centroid
 
+root_path = os.path.abspath('')
+root_path = os.path.abspath(os.path.join(os.getcwd(), ".."))
 
-root_path = "../" + os.path.dirname(os.path.dirname(__file__))
 dataset_path = os.path.join(root_path, 'datasets', 'aic19-track1-mtmc-train')
 #train_path = os.path.join(dataset_path, 'train')
 #train_folders = ['S01', 'S04']      # Train with S01 and S04
 test_path = os.path.join(dataset_path, 'train', 'S03')
+#test_path = os.path.join(dataset_path, 'train', 'S04')
 test_sequences = ['c010', 'c011', 'c012', 'c013', 'c014', 'c015']
+#test_sequences = ['c016', 'c017', 'c018', 'c019', 'c020', 'c021', 'c022', 'c023', 'c024', 'c025', 'c026', 'c027', 'c028', 'c029', 'c030', 'c031', 'c032', 'c033', 'c034', 'c035', 'c036', 'c037', 'c038', 'c039', 'c040']
 
 # para pruebas con una sola secuencia
-test_sequences = ['c015']
+#test_sequences = ['c014']
 
 # Flags
 display_frames = False
 export_frames = False
+
+detected_tracks = []
 
 for sequence in test_sequences:
 
@@ -43,20 +48,22 @@ for sequence in test_sequences:
     # Save all detection results in an array
     detections_array = []
     # State-of-the-art background subtractors
-    if os.path.exists(os.path.join('pickle','detections_MOG_MOG2_GMG.pkl')):
-        with open(os.path.join('pickle','detections_MOG_MOG2_GMG.pkl'), 'rb') as p:
-            detectionsMOG, detectionsMOG2, detectionsGMG = pickle.load(p)
-    else:
-        detectionsMOG, detectionsMOG2, detectionsGMG = BackgroundSubtractor(video_path)
-    # detections_array.append(detectionsMOG)
-    # detections_array.append(detectionsMOG2)
-    # detections_array.append(detectionsGMG)
+    #if os.path.exists(os.path.join('pickle','detections_MOG_MOG2_GMG.pkl')):
+    #    with open(os.path.join('pickle','detections_MOG_MOG2_GMG.pkl'), 'rb') as p:
+    #        detectionsMOG, detectionsMOG2, detectionsGMG = pickle.load(p)
+    #else:
+    #    detectionsMOG, detectionsMOG2, detectionsGMG = BackgroundSubtractor(video_path)
+    #detections_array.append(detectionsMOG)
+    #detections_array.append(detectionsMOG2)
+    #detections_array.append(detectionsGMG)
 
     # Read CNN detection files
-    for network in ['det_mask_rcnn.txt', 'det_ssd512.txt', 'det_yolo3.txt']:
+    #for network in ['det_mask_rcnn.txt', 'det_ssd512.txt', 'det_yolo3.txt']:
+    for network in ['det_ssd512.txt']:
+
         network_path = os.path.join(test_path, sequence, 'det', network)
         detection = read_annotations_from_txt(network_path)
-        # detections_array.append(detection)
+        #detections_array.append(detection)
 
         # filtering nms
         detection = filtering_nms(detection, video_path)
@@ -76,19 +83,20 @@ for sequence in test_sequences:
         print("\nComputing tracking by overlap")
         with open(os.path.join("results","metrics.txt"), "a") as f:
             f.write("\nComputing tracking by overlap\n")
-        detected_tracks = track_objects(video_path, detections, groundtruth_list, display=display_frames, export_frames=export_frames)
+        detected_tracks[int(sequence[1:])] = track_objects_single(video_path, detections, groundtruth_list, display=display_frames, export_frames=export_frames)
 
         # Kalman
-        print("\nComputing Kalman tracking")
-        with open(os.path.join("results","metrics.txt"), "a") as f:
-            f.write("\nComputing Kalman tracking\n")
-        kalman_tracks = kalman_track_objects(video_path, detections, groundtruth_list, display=display_frames, export_frames=export_frames)
+        #print("\nComputing Kalman tracking")
+        #with open(os.path.join("results","metrics.txt"), "a") as f:
+        #    f.write("\nComputing Kalman tracking\n")
+        #kalman_tracks = kalman_track_objects(video_path, detections, groundtruth_list, display=display_frames, export_frames=export_frames)
+
         ######################## Centroid tracking
-        print("\nCentroid tracking")
-        with open("results/metrics.txt", "a") as f:
-            f.write("\nComputing Centroid tracking\n")
-        ct = CentroidTracker()
-        centroid.track_objects(ct, video_path, detections, groundtruth_list, display=display_frames, export_frames=False)
+        #print("\nCentroid tracking")
+        #with open("results/metrics.txt", "a") as f:
+        #    f.write("\nComputing Centroid tracking\n")
+        #ct = CentroidTracker()
+        #centroid.track_objects(ct, video_path, detections, groundtruth_list, display=display_frames, export_frames=False)
 
         #################################################### Optical Flow
         # Optical Flow
@@ -97,3 +105,7 @@ for sequence in test_sequences:
         # optical_flow.track_optical_flow_sequence(video_path, False)
         # print(optical_flow.ordered_tracks[0])
         # print(optical_flow.frame_idx)
+
+
+with open('detected_tracks_ssd.pkl', 'wb') as f:
+    pickle.dump(detected_tracks, f)

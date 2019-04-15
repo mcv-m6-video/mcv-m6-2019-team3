@@ -24,7 +24,7 @@ if __name__ == '__main__':
     print(root_path)
     #sequences = [('train','S01'), ('test','S02'), ('train','S03'), ('train','S04'), ('test','S05')]
     # For testing
-    sequences = [('train', 'S01')]  # [('train','S01'), ('test','S02'), ('train','S03'), ('train','S04'), ('test','S05')]
+    sequences = [('train', 'S03')]  # [('train','S01'), ('test','S02'), ('train','S03'), ('train','S04'), ('test','S05')]
 
     #cameras_path = ["../datasets/aic19-track1-mtmc-train/train/S01/c001/", "../datasets/aic19-track1-mtmc-train/train/S01/c002/"]
     video_challenge_path = "/vdo.avi"
