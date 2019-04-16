@@ -1,5 +1,7 @@
 # M6 Project: Video Surveillance for Road Traffic Monitoring
 
+[Technical Report](https://www.overleaf.com/read/vwndcskpcypb)
+
 ## Week 1: Dataset and metrics implementations
 
 <div align="center">
